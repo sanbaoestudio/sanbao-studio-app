@@ -1,0 +1,1001 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6efe8">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="San Bao"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="../manifest.webmanifest"><link rel="apple-touch-icon" href="../icon-192.png"><link rel="icon" href="../icon-192.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script>window.SELLO_STANDALONE=true;</script>
+</head><body>
+<title>San Bao Sello</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Manrope:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: mesa de trabajo — panel de ajustes a la izquierda, visor y tira de fotos a la derecha; se apila en el celular */
+:root {
+  --bg: #f6efe8;
+  --panel: #fffaf5;
+  --ink: #2a1f19;
+  --muted: #7d6a5e;
+  --line: #e7d8cb;
+  --accent: #ff914d;
+  --accent-ink: #b9531a;
+  --stage: #e9ddd2;
+  --danger: #b3261e;
+  --f-display: "Bricolage Grotesque", "Manrope", system-ui, sans-serif;
+  --f-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1411; --panel: #231b17; --ink: #f4e9df; --muted: #b29f92; --line: #3a2e27;
+    --accent: #ff914d; --accent-ink: #ffb07f; --stage: #120d0b; --danger: #ff8a80; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1411; --panel: #231b17; --ink: #f4e9df; --muted: #b29f92; --line: #3a2e27;
+  --accent: #ff914d; --accent-ink: #ffb07f; --stage: #120d0b; --danger: #ff8a80; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: grid; gap: 20px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.home { font: 600 13px var(--f-body); color: var(--muted); text-decoration: none; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.home:hover { color: var(--ink); }
+.brand svg { height: 22px; width: auto; display: block; }
+.brand h1 { font-family: var(--f-display); font-weight: 700; font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+.brand span { color: var(--muted); font-size: 13px; }
+.count { font-family: var(--f-mono); font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.grid { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 18px; }
+.drop {
+  border: 1.5px dashed var(--accent); border-radius: 12px; padding: 22px 16px; text-align: center; cursor: pointer;
+  display: grid; gap: 6px; transition: background .15s;
+}
+.drop:hover, .drop.over { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop strong { font-family: var(--f-display); font-size: 17px; font-weight: 700; }
+.drop small { color: var(--muted); font-size: 12.5px; }
+.drop input { display: none; }
+
+.field { display: grid; gap: 8px; }
+.label { display: flex; justify-content: space-between; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.label output { font-family: var(--f-mono); text-transform: none; letter-spacing: 0; color: var(--ink); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+select { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+
+.corners { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; aspect-ratio: 2 / 1; max-width: 100%; padding: 6px; border-radius: 10px; background: var(--stage); }
+.corners button {
+  border: 1px solid var(--line); border-radius: 7px; background: var(--panel); cursor: pointer; display: flex; padding: 7px;
+}
+.corners button i { display: block; width: 24px; height: 6px; border-radius: 3px; background: var(--line); }
+.corners button:hover i { background: var(--muted); }
+.corners button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.corners button[aria-pressed="true"] i { background: var(--accent); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+.hint b { color: var(--accent-ink); font-weight: 600; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 9px; background: var(--stage); }
+.seg button { border: 0; border-radius: 6px; padding: 6px 8px; background: transparent; color: var(--muted); font: 600 13px var(--f-body); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+.seg4 { grid-template-columns: repeat(4, 1fr); }
+.stage canvas.pan { cursor: move; }
+.seg button:focus-visible, .swatches button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; min-height: 46px; }
+.row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.row3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.shbox { display: grid; gap: 12px; }
+.row3 .label { font-size: 11px; letter-spacing: .03em; gap: 6px; }
+.dirrow { display: flex; align-items: center; gap: 14px; }
+.dirs { display: grid; grid-template-columns: repeat(3, 34px); grid-template-rows: repeat(3, 34px); gap: 4px; padding: 5px; border-radius: 10px; background: var(--stage); }
+.dirs button { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--muted); font: 600 15px/1 var(--f-body); cursor: pointer; padding: 0; }
+.dirs button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, var(--panel)); color: var(--accent-ink); }
+.dirs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.dirs span { display: grid; place-items: center; color: var(--accent); font-size: 18px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.swatches button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+.swatches button[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 2px var(--panel); }
+.swatches .auto { width: auto; border-radius: 14px; padding: 0 10px; font: 600 12px var(--f-body); background: var(--panel); color: var(--ink); }
+.sub { font-family: var(--f-display); font-weight: 700; font-size: 16px; margin: 0; padding-top: 16px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sub small { font: 500 12px var(--f-body); color: var(--muted); }
+.linkrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.linkrow b { color: var(--accent-ink); font-weight: 600; }
+.btn.small { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+.corners button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.check { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+.btn {
+  font: 600 15px var(--f-body); border-radius: 10px; padding: 12px 16px; cursor: pointer; border: 1px solid transparent;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn.primary { background: var(--accent); color: #2a1406; }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.actions { display: grid; gap: 8px; }
+.progress { height: 4px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .15s; }
+.msg { font-size: 13px; color: var(--muted); min-height: 1.5em; margin: 0; }
+.msg.err { color: var(--danger); }
+
+.viewer { display: grid; gap: 14px; min-width: 0; }
+.stage {
+  background: var(--stage); border-radius: 14px; display: grid; place-items: center; padding: 16px; min-height: 320px; position: relative;
+}
+.stage canvas { max-width: 100%; max-height: 68vh; height: auto; display: block; border-radius: 4px; box-shadow: 0 6px 24px rgb(0 0 0 / .18); touch-action: none; }
+.stage canvas.over-logo { cursor: grab; }
+.stage canvas.dragging { cursor: grabbing; }
+.stage canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.tag { position: absolute; top: 12px; left: 12px; font: 500 11px var(--f-mono); text-transform: uppercase; letter-spacing: .08em; background: var(--panel); color: var(--muted); padding: 4px 8px; border-radius: 6px; }
+.meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.meta b { color: var(--ink); font-weight: 600; overflow-wrap: anywhere; }
+.meta .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+
+.strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.thumb { position: relative; border: 2px solid transparent; border-radius: 8px; padding: 0; background: var(--stage); cursor: pointer; aspect-ratio: 1; overflow: hidden; }
+.thumb canvas { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb[aria-current="true"] { border-color: var(--accent); }
+.thumb:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.thumb .x {
+  position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: rgb(0 0 0 / .55);
+  color: #fff; font-size: 13px; line-height: 22px; cursor: pointer; padding: 0;
+}
+.thumb .pick {
+  position: absolute; left: 4px; bottom: 4px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff;
+  background: rgb(0 0 0 / .4); color: #fff; font: 700 14px/22px var(--f-body); padding: 0; cursor: pointer;
+}
+.thumb .pick[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: #2a1406; }
+.thumb .pick:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.thumb.off canvas { opacity: .4; }
+.striphead { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.thumb.bad { display: grid; place-items: center; font-size: 11px; color: var(--danger); padding: 6px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <a class="home" id="home" href="../" hidden>← Inicio</a>
+      <svg id="brandLogo" viewBox="247 763 2647 394" aria-label="San Bao"></svg>
+      <div><h1>Sello</h1><span>Marca de agua en lote</span></div>
+    </div>
+    <div class="count" id="count"></div>
+  </header>
+
+  <div class="grid">
+    <aside class="panel">
+      <label class="drop" id="drop" tabindex="0">
+        <strong>Soltá tus fotos acá</strong>
+        <small>o tocá para elegir · JPG, PNG, WebP · se procesan en tu navegador, no se suben</small>
+        <input type="file" id="file" accept="image/*" multiple>
+      </label>
+
+      <div class="field">
+        <div class="label">Formato<output id="frameOut"></output></div>
+        <div class="seg seg4" id="frame" role="group" aria-label="Formato de salida">
+          <button type="button" data-f="orig">Original</button>
+          <button type="button" data-f="3:4">3:4</button>
+          <button type="button" data-f="4:5">4:5</button>
+          <button type="button" data-f="4:3">4:3</button>
+        </div>
+        <p class="hint" id="frameHint" hidden>Arrastrá la foto para elegir qué parte queda en el recorte. Cada foto guarda el suyo.</p>
+      </div>
+
+      <div class="field">
+        <div class="label">Posición<output id="posOut"></output></div>
+        <div class="seg" id="layer" role="group" aria-label="Qué mover">
+          <button type="button" data-l="logo" aria-pressed="true">Logo</button>
+          <button type="button" data-l="text" aria-pressed="false">Texto</button>
+        </div>
+        <div class="corners" id="corners" role="group" aria-label="Posición del logo">
+          <button type="button" data-x="0" data-y="0" aria-label="Arriba izquierda" style="justify-content:flex-start;align-items:flex-start"><i></i></button>
+          <button type="button" data-x="0.5" data-y="0" aria-label="Arriba al centro" style="justify-content:center;align-items:flex-start"><i></i></button>
+          <button type="button" data-x="1" data-y="0" aria-label="Arriba derecha" style="justify-content:flex-end;align-items:flex-start"><i></i></button>
+          <button type="button" data-x="0" data-y="0.5" aria-label="Centro izquierda" style="justify-content:flex-start;align-items:center"><i></i></button>
+          <button type="button" data-x="0.5" data-y="0.5" aria-label="Centro" style="justify-content:center;align-items:center"><i></i></button>
+          <button type="button" data-x="1" data-y="0.5" aria-label="Centro derecha" style="justify-content:flex-end;align-items:center"><i></i></button>
+          <button type="button" data-x="0" data-y="1" aria-label="Abajo izquierda" style="justify-content:flex-start;align-items:flex-end"><i></i></button>
+          <button type="button" data-x="0.5" data-y="1" aria-label="Abajo al centro" style="justify-content:center;align-items:flex-end"><i></i></button>
+          <button type="button" data-x="1" data-y="1" aria-label="Abajo derecha" style="justify-content:flex-end;align-items:flex-end"><i></i></button>
+        </div>
+        <p class="hint">O <b>arrastrá el logo o el texto</b> sobre la foto. El recuadro punteado marca cuál estás moviendo. Si acercás el texto al logo, se imanta y queda alineado en todas las fotos.</p>
+        <div class="row2">
+          <div class="field">
+            <div class="label"><label for="posX">Horizontal</label><output id="posXOut"></output></div>
+            <input type="range" id="posX" min="0" max="100" step="0.5">
+          </div>
+          <div class="field">
+            <div class="label"><label for="posY">Vertical</label><output id="posYOut"></output></div>
+            <input type="range" id="posY" min="0" max="100" step="0.5">
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label"><label for="size">Tamaño</label><output id="sizeOut"></output></div>
+        <input type="range" id="size" min="8" max="45" step="1">
+      </div>
+      <div class="field">
+        <div class="label"><label for="margin">Margen</label><output id="marginOut"></output></div>
+        <input type="range" id="margin" min="1" max="10" step="0.5">
+      </div>
+      <div class="field">
+        <div class="label"><label for="opacity">Opacidad</label><output id="opacityOut"></output></div>
+        <input type="range" id="opacity" min="30" max="100" step="5">
+      </div>
+      <div class="field">
+        <div class="label"><label for="color">Color</label></div>
+        <select id="color">
+          <option value="auto">Naranja, pasa a blanco si se pierde</option>
+          <option value="orange">Siempre naranja</option>
+          <option value="white">Siempre blanco</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="label">Sombra</div>
+        <div class="seg" id="shTarget" role="group" aria-label="Sombra de">
+          <button type="button" data-t="logo" aria-pressed="true">Logo</button>
+          <button type="button" data-t="text" aria-pressed="false">Texto</button>
+        </div>
+      </div>
+      <label class="check"><input type="checkbox" id="shadow"> <span id="shadowLbl">Sombra del logo</span></label>
+      <div class="shbox" id="shadowBox" hidden>
+        <div class="row3">
+          <div class="field">
+            <div class="label"><label for="shOp">Opacidad</label><output id="shOpOut"></output></div>
+            <input type="range" id="shOp" min="5" max="100" step="5">
+          </div>
+          <div class="field">
+            <div class="label"><label for="shDist">Distancia</label><output id="shDistOut"></output></div>
+            <input type="range" id="shDist" min="0" max="50" step="1">
+          </div>
+          <div class="field">
+            <div class="label"><label for="shBlur">Tamaño</label><output id="shBlurOut"></output></div>
+            <input type="range" id="shBlur" min="0" max="100" step="1">
+          </div>
+        </div>
+        <div class="dirrow">
+          <div class="dirs" id="shDirs" role="group" aria-label="Dirección de la sombra">
+            <button type="button" data-d="tl" aria-label="Arriba a la izquierda">↖</button>
+            <button type="button" data-d="t" aria-label="Arriba">↑</button>
+            <button type="button" data-d="tr" aria-label="Arriba a la derecha">↗</button>
+            <button type="button" data-d="l" aria-label="Izquierda">←</button>
+            <span aria-hidden="true">●</span>
+            <button type="button" data-d="r" aria-label="Derecha">→</button>
+            <button type="button" data-d="bl" aria-label="Abajo a la izquierda">↙</button>
+            <button type="button" data-d="b" aria-label="Abajo">↓</button>
+            <button type="button" data-d="br" aria-label="Abajo a la derecha">↘</button>
+          </div>
+          <div class="field"><div class="label">Dirección</div><span class="hint" id="shDirOut"></span></div>
+        </div>
+      </div>
+
+      <h2 class="sub">Texto <small>Bricolage Grotesque</small></h2>
+      <div class="field">
+        <div class="label"><label for="text">Qué dice</label></div>
+        <textarea id="text" rows="2" placeholder="Ej: Expo Cannabis 2026 · Foto San Bao"></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <div class="label"><label for="tsize">Tamaño</label><output id="tsizeOut"></output></div>
+          <input type="range" id="tsize" min="1.5" max="12" step="0.5">
+        </div>
+        <div class="field">
+          <div class="label"><label for="tweight">Peso</label></div>
+          <select id="tweight">
+            <option value="300">Light</option>
+            <option value="400">Regular</option>
+            <option value="500">Medium</option>
+            <option value="600">SemiBold</option>
+            <option value="700">Bold</option>
+            <option value="800">ExtraBold</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Color del texto</div>
+        <div class="swatches" id="swatches"></div>
+      </div>
+      <div class="field">
+        <div class="label"><label for="gap">Separación del logo</label><output id="gapOut"></output></div>
+        <input type="range" id="gap" min="0" max="6" step="0.1">
+        <div class="linkrow"><span id="linkState"></span><button type="button" class="btn ghost small" id="unlink">Soltar del logo</button></div>
+      </div>
+      <label class="check"><input type="checkbox" id="showLogo"> Mostrar el logo</label>
+
+      <div class="field">
+        <div class="label"><label for="format">Formato de salida</label></div>
+        <select id="format">
+          <option value="same">Igual al original</option>
+          <option value="jpg">JPG</option>
+          <option value="png">PNG</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="share" type="button" hidden>Guardar en Fotos o Instagram</button>
+        <button class="btn primary" id="saveEach" type="button">Guardar todas en Fotos</button>
+        <button class="btn ghost" id="dlAll" type="button">Descargar .zip (para la compu)</button>
+        <button class="btn ghost" id="dlOne" type="button">Descargar esta foto</button>
+        <button class="btn ghost" id="clear" type="button">Vaciar lista</button>
+        <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+        <p class="msg" id="msg" role="status"></p>
+      </div>
+    </aside>
+
+    <section class="viewer">
+      <div class="stage">
+        <span class="tag" id="tag">Ejemplo</span>
+        <canvas id="preview" width="1200" height="800" tabindex="0" aria-label="Vista previa con marca de agua. Arrastrá el logo o usá las flechas para moverlo."></canvas>
+      </div>
+      <div class="meta"><b id="name">Imagen de ejemplo</b><span class="mono" id="dims"></span></div>
+      <div class="striphead" id="stripHead" hidden><span id="selCount"></span><button class="btn ghost small" id="selAll" type="button">Seleccionar todas</button></div>
+      <div class="strip" id="strip"></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const LOGO = ["M447.25,941.8c-76.82-10.84-156.25-22.04-156.25-60.47,0-23.97,12.46-42.75,34.17-51.52,38.12-15.4,109.02-.59,193.74,87.15l2.25,2.33h110.4l-2.74-9.69c-22.03-77.79-108.11-136.45-200.22-136.45-99.48,0-174.5,46.51-174.5,108.18s96.53,78.28,189.88,91.76c77.56,11.2,157.76,22.79,157.76,62.55,0,23.31-23.06,34.14-36.8,38.52-56.05,17.86-147.12-5.89-196.45-75.44l-2.28-3.21h-119.12l1.98,9.21c17.84,83.11,102.46,143.42,201.2,143.42,109.15,0,188.37-48.23,188.37-114.68s-97.29-78.4-191.38-91.67Z", "M805.81,779.22l-96.27,154.82c-42.82,67.65-54.11,127.22-31.8,167.75,16.7,30.33,50.45,46.36,97.62,46.36,63.74,0,115.03-57.19,130.29-141.99l64.29,135.05h99.21l-171.95-362h-91.4ZM786.63,1050.56c-24.54,0-42.26-7.98-51.22-23.07-11.8-19.85-7.75-51.11,10.96-85.5l71.6-120.78,64.18,135c-1.62,54.77-41.53,94.34-95.51,94.34Z", "M1352.92,778.78v289.98l-170.08-289.54h-141.14v84.58h87.26c-21.62,15.2-35.24,40.55-35.25,70.39l-.9,207.03h93.29v-289.98l170.08,289.54h89.99v-362h-93.25Z", "M1936.31,953.34c37.62-19.7,61.05-51.21,61.05-83.75,0-57.18-70.01-100.3-162.85-100.3h-180.66v380.49h180.66c100.65,0,176.55-45.08,176.55-104.86,0-38.37-27.59-71.73-74.75-91.58ZM1886.44,938.96c-16.64-2.87-34.49-4.38-51.93-4.38-26.4,0-56.75,5.2-83.24,14.11v-149.44c85.29,2.4,148.68,44.99,148.68,100.94,0,13.98-5.11,28.46-13.51,38.77ZM1913.64,1032.6c0,48.48-69.28,85.36-162.37,87.28v-130.93c19.93-9.23,47.92-14.48,77.76-14.48,48.24,0,84.61,24.99,84.61,58.13Z", "M2192.33,769.3l-101.28,162.88c-44.37,70.09-56.57,134.35-33.48,176.28,17.51,31.81,52.94,48.62,102.47,48.62,67.25,0,121.3-60.67,137.06-150.47l68.16,143.16h103.61l-180.73-380.49h-95.79ZM2129.15,940.14l75.8-127.87,67.97,142.98c-1.67,57.98-43.89,99.87-101.01,99.87-26,0-44.78-8.47-54.3-24.5-12.5-21.04-8.24-54.1,11.55-90.47Z", "M2680.53,762.91c-121.47,0-213.08,84.73-213.08,197.09s91.6,197.09,213.08,197.09,213.07-84.73,213.07-197.09-91.6-197.09-213.07-197.09ZM2626.9,1035.94h0c-84.69-59.37-125.69-136.86-95.37-180.24,30.26-43.28,117.36-31.1,202.6,28.35,84.7,59.38,125.7,136.87,95.38,180.25-30.26,43.29-117.38,31.09-202.62-28.36Z"];
+const LOGO_BOX = { x: 247, y: 763, w: 2647, h: 394 };
+const ORANGE = '#ff914d';
+const PATHS = LOGO.map(d => new Path2D(d));
+const PREVIEW_MAX = 1600, THUMB_MAX = 240;
+// formatos de Instagram (las horizontales se exportan a 1080 de ancho, como las muestra Instagram)
+const FRAMES = { '3:4': [1080, 1440], '4:5': [1080, 1350], '4:3': [1080, 810] };
+
+const $ = id => document.getElementById(id);
+$('brandLogo').innerHTML = LOGO.map(d => `<path fill="${ORANGE}" d="${d}"/>`).join('');
+
+// ---------- ajustes ----------
+// px / py: posición dentro del área útil (0 = borde izq./arriba, 1 = borde der./abajo, respetando el margen)
+const DEFAULTS = { px: 1, py: 1, size: 18, margin: 3, opacity: 100, shadow: false, format: 'same', color: 'auto',
+  text: '', tx: 0.5, ty: 1, tsize: 4, tweight: 600, tcolor: 'logo', showLogo: true,
+  // ax / ay: cómo queda el texto alineado al logo (null = libre). gap: separación en % del lado corto
+  ax: null, ay: null, gap: 1.2, frame: 'orig',
+  // sombra: opacidad en %, distancia y tamaño (desenfoque) en % de la altura del logo o de la letra
+  shOp: 35, shDist: 6, shBlur: 35, shDir: 'b',
+  // la sombra del texto va aparte, con sus propios valores
+  tshadow: null, tshOp: 35, tshDist: 6, tshBlur: 35, tshDir: 'b' };
+const SK = t => t === 'text' ? { on: 'tshadow', op: 'tshOp', dist: 'tshDist', blur: 'tshBlur', dir: 'tshDir' }
+  : { on: 'shadow', op: 'shOp', dist: 'shDist', blur: 'shBlur', dir: 'shDir' };
+const SLIDER_KEY = { shOp: 'op', shDist: 'dist', shBlur: 'blur' };
+let shT = 'logo';
+// hacia dónde cae la sombra (las diagonales a 45°, con el mismo largo que las rectas)
+const D = Math.SQRT1_2;
+const SH_DIRS = { tl: [-D, -D, 'arriba a la izquierda'], t: [0, -1, 'arriba'], tr: [D, -D, 'arriba a la derecha'], l: [-1, 0, 'a la izquierda'],
+  r: [1, 0, 'a la derecha'], bl: [-D, D, 'abajo a la izquierda'], b: [0, 1, 'abajo'], br: [D, D, 'abajo a la derecha'] };
+let S = { ...DEFAULTS };
+try { Object.assign(S, JSON.parse(localStorage.getItem('sello-ajustes') || '{}')); } catch (e) {}
+if (S.tshadow === null || S.tshadow === undefined) S.tshadow = !!S.shadow;
+if (S.corner) { S.px = S.corner.endsWith('l') ? 0 : 1; S.py = S.corner.startsWith('t') ? 0 : 1; delete S.corner; }
+const saveSettings = () => { try { localStorage.setItem('sello-ajustes', JSON.stringify(S)); } catch (e) {} };
+
+// Tamaño = ancho del logo en % del lado corto de la foto; así se ve igual en verticales y horizontales
+function logoRect(w, h) {
+  const short = Math.min(w, h);
+  const lw = short * S.size / 100, lh = LOGO_BOX.h * lw / LOGO_BOX.w;
+  const m = short * S.margin / 100;
+  const aw = Math.max(0, w - 2 * m - lw), ah = Math.max(0, h - 2 * m - lh);
+  return { x: m + S.px * aw, y: m + S.py * ah, lw, lh, m, aw, ah };
+}
+// ---------- color automático ----------
+// Mira cada píxel de la zona donde cae el logo y cuenta en cuántos el naranja (y el blanco) se confunde
+// con el fondo (distancia en Lab). Pasa a blanco solo si el naranja se pierde en buena parte y el blanco casi no se pierde.
+const WHITE = '#ffffff';
+function lab([r, g, b]) {
+  const lin = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+  const R = lin(r), G = lin(g), B = lin(b);
+  const X = (0.4124 * R + 0.3576 * G + 0.1805 * B) / 0.95047, Y = 0.2126 * R + 0.7152 * G + 0.0722 * B, Z = (0.0193 * R + 0.1192 * G + 0.9505 * B) / 1.08883;
+  const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+}
+const dE = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+const LAB_ORANGE = lab([255, 145, 77]), LAB_WHITE = lab([255, 255, 255]);
+function colorFor(it) {
+  if (S.color === 'orange') return ORANGE;
+  if (S.color === 'white') return WHITE;
+  const v = view(it); return autoColor(v, logoRect(v.width, v.height));
+}
+// "Como el logo" sigue la misma regla, pero mirando la zona donde cae el texto
+function textColorFor(it) {
+  if (S.tcolor !== 'logo') return S.tcolor;
+  if (S.color !== 'auto') return colorFor(it);
+  const v = view(it); return autoColor(v, textRect(v.width, v.height));
+}
+function autoColor(src, L) {
+  const x = Math.max(0, Math.floor(L.x)), y = Math.max(0, Math.floor(L.y));
+  const w = Math.max(1, Math.min(src.width - x, Math.ceil(L.lw))), h = Math.max(1, Math.min(src.height - y, Math.ceil(L.lh)));
+  let d;
+  try { d = src.getContext('2d').getImageData(x, y, w, h).data; } catch (e) { return ORANGE; }
+  let lostO = 0, lostW = 0, n = 0;
+  for (let i = 0; i < d.length; i += 16) {
+    const p = lab([d[i], d[i + 1], d[i + 2]]); n++;
+    if (dE(LAB_ORANGE, p) < 42) lostO++;
+    if (dE(LAB_WHITE, p) < 42) lostW++;
+  }
+  // el blanco tiene que ganar con claridad: si también se pierde en parte (cielo claro, paredes), queda naranja
+  return (lostO / n > 0.35 && lostW / n < 0.15) ? WHITE : ORANGE;
+}
+
+function applyShadow(ctx, h, t) {
+  const k = SK(t);
+  ctx.shadowColor = `rgba(0,0,0,${S[k.op] / 100})`;
+  ctx.shadowBlur = h * S[k.blur] / 100;
+  const [dx, dy] = SH_DIRS[S[k.dir]] || SH_DIRS.b;
+  ctx.shadowOffsetX = h * S[k.dist] / 100 * dx;
+  ctx.shadowOffsetY = h * S[k.dist] / 100 * dy;
+}
+function stamp(ctx, w, h, fill = ORANGE) {
+  const { x, y, lw, lh } = logoRect(w, h), k = lw / LOGO_BOX.w;
+  ctx.save();
+  ctx.globalAlpha = S.opacity / 100;
+  if (S.shadow) applyShadow(ctx, lh, 'logo');
+  ctx.translate(x, y); ctx.scale(k, k); ctx.translate(-LOGO_BOX.x, -LOGO_BOX.y);
+  ctx.fillStyle = fill;
+  for (const p of PATHS) ctx.fill(p);
+  ctx.restore();
+}
+
+// ---------- texto (tipografía del manual: Bricolage Grotesque) ----------
+const FONT = '"Bricolage Grotesque", "Manrope", system-ui, sans-serif';
+const mctx = document.createElement('canvas').getContext('2d');
+const hasText = () => !!S.text.trim();
+// Tamaño del texto = altura de letra en % del lado corto, igual que el logo
+function textRect(w, h) {
+  const short = Math.min(w, h), fs = short * S.tsize / 100, m = short * S.margin / 100, lineH = fs * 1.15;
+  mctx.font = `${S.tweight} ${fs}px ${FONT}`;
+  const lines = S.text.split('\n'), widths = lines.map(l => mctx.measureText(l).width);
+  const lw = Math.max(1, ...widths), lh = lines.length * lineH;
+  const aw = Math.max(0, w - 2 * m - lw), ah = Math.max(0, h - 2 * m - lh);
+  let x = m + S.tx * aw, y = m + S.ty * ah;
+  // alineado al logo: la relación se guarda, no la posición, así se respeta en fotos de cualquier formato
+  if (S.showLogo && (S.ax || S.ay)) {
+    const L = logoRect(w, h), g = short * S.gap / 100;
+    if (S.ax) x = Math.min(Math.max(relX(S.ax, L, lw, g), m), Math.max(m, w - m - lw));
+    if (S.ay) y = Math.min(Math.max(relY(S.ay, L, lh, g), m), Math.max(m, h - m - lh));
+  }
+  return { x, y, lw, lh, m, aw, ah, fs, lineH, lines, widths };
+}
+const relX = (r, L, tw, g) => ({ left: L.x, center: L.x + L.lw / 2 - tw / 2, right: L.x + L.lw - tw, after: L.x + L.lw + g, before: L.x - g - tw })[r];
+const relY = (r, L, th, g) => ({ top: L.y, middle: L.y + L.lh / 2 - th / 2, bottom: L.y + L.lh - th, below: L.y + L.lh + g, above: L.y - g - th })[r];
+function drawText(ctx, w, h, fill) {
+  if (!hasText()) return;
+  const T = textRect(w, h);
+  ctx.save();
+  ctx.globalAlpha = S.opacity / 100;
+  if (S.tshadow) applyShadow(ctx, T.fs, 'text');
+  ctx.font = `${S.tweight} ${T.fs}px ${FONT}`; ctx.textBaseline = 'alphabetic'; ctx.fillStyle = fill;
+  // alineado según dónde esté: a la izquierda, al centro o a la derecha
+  T.lines.forEach((l, i) => {
+    const off = S.tx < 0.34 ? 0 : S.tx > 0.66 ? T.lw - T.widths[i] : (T.lw - T.widths[i]) / 2;
+    ctx.fillText(l, T.x + off, T.y + i * T.lineH + T.fs * 0.92);
+  });
+  ctx.restore();
+}
+function stampAll(ctx, w, h, it) {
+  if (S.showLogo) stamp(ctx, w, h, colorFor(it));
+  drawText(ctx, w, h, textColorFor(it));
+}
+// recuadro punteado sobre lo que se está moviendo (solo en la vista previa, nunca en la descarga)
+function drawSelection(ctx, w, h) {
+  if (layer === 'text' ? !hasText() : !S.showLogo) return;
+  const R = layer === 'text' ? textRect(w, h) : logoRect(w, h);
+  const pad = Math.max(4, Math.min(R.lh, R.lw) * 0.25), lw = Math.max(1.5, w / 500);
+  const box = [R.x - pad, R.y - pad, R.lw + 2 * pad, R.lh + 2 * pad];
+  ctx.save(); ctx.lineWidth = lw; ctx.setLineDash([lw * 4, lw * 3]);
+  ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeRect(...box);
+  ctx.lineDashOffset = lw * 3.5; ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.strokeRect(...box);
+  ctx.restore();
+}
+// guías magnéticas mientras se arrastra
+function drawGuides(ctx, w, h) {
+  if (!drag || !guides) return;
+  const lw = Math.max(1.5, w / 450);
+  ctx.save(); ctx.strokeStyle = '#ff3da8'; ctx.lineWidth = lw;
+  const line = (x1, y1, x2, y2) => { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke(); };
+  if (guides.cx) line(w / 2, 0, w / 2, h);
+  if (guides.cy) line(0, h / 2, w, h / 2);
+  if (S.showLogo && hasText() && (S.ax || S.ay)) {
+    const L = logoRect(w, h), T = textRect(w, h), ext = Math.min(w, h) * 0.02;
+    const top = Math.min(L.y, T.y) - ext, bot = Math.max(L.y + L.lh, T.y + T.lh) + ext;
+    const lef = Math.min(L.x, T.x) - ext, rig = Math.max(L.x + L.lw, T.x + T.lw) + ext;
+    const xs = { left: [L.x], center: [L.x + L.lw / 2], right: [L.x + L.lw], after: [L.x + L.lw, T.x], before: [L.x, T.x + T.lw] }[S.ax] || [];
+    const ys = { top: [L.y], middle: [L.y + L.lh / 2], bottom: [L.y + L.lh], below: [L.y + L.lh, T.y], above: [L.y, T.y + T.lh] }[S.ay] || [];
+    xs.forEach(x => line(x, top, x, bot)); ys.forEach(y => line(lef, y, rig, y));
+  }
+  ctx.restore();
+}
+const fontReady = () => document.fonts && document.fonts.load ? document.fonts.load(`${S.tweight} 40px "Bricolage Grotesque"`).catch(() => {}) : Promise.resolve();
+
+// ---------- fotos ----------
+let items = [], current = -1;
+let sample = null;
+
+function fit(w, h, max) { const r = Math.min(1, max / Math.max(w, h)); return [Math.round(w * r), Math.round(h * r)]; }
+function scaled(src, w, h, max) {
+  const [cw, ch] = fit(w, h, max); const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+  c.getContext('2d').drawImage(src, 0, 0, cw, ch); return c;
+}
+
+function makeSample() {
+  const c = document.createElement('canvas'); c.width = 1200; c.height = 800; const g = c.getContext('2d');
+  const sky = g.createLinearGradient(0, 0, 0, 520); sky.addColorStop(0, '#5b3a6e'); sky.addColorStop(.6, '#e8775a'); sky.addColorStop(1, '#ffc08a');
+  g.fillStyle = sky; g.fillRect(0, 0, 1200, 520);
+  g.fillStyle = '#ffd9a8'; g.beginPath(); g.arc(760, 520, 110, Math.PI, 0); g.fill();
+  const sea = g.createLinearGradient(0, 520, 0, 800); sea.addColorStop(0, '#3b4c74'); sea.addColorStop(1, '#1d2440');
+  g.fillStyle = sea; g.fillRect(0, 520, 1200, 280);
+  g.strokeStyle = 'rgba(255,200,150,.55)'; g.lineCap = 'round';
+  for (let i = 0; i < 9; i++) { g.lineWidth = 5 - i * .4; const w = 200 - i * 18; g.beginPath(); g.moveTo(760 - w / 2, 545 + i * 22); g.lineTo(760 + w / 2, 545 + i * 22); g.stroke(); }
+  return { name: 'Imagen de ejemplo', w: 1200, h: 800, preview: c, thumb: scaled(c, 1200, 800, THUMB_MAX), sample: true, fx: 0.5, fy: 0.5 };
+}
+
+async function decode(file) {
+  try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch (e) {
+    return await new Promise((res, rej) => {
+      const url = URL.createObjectURL(file), im = new Image();
+      im.onload = () => { URL.revokeObjectURL(url); res(im); };
+      im.onerror = () => { URL.revokeObjectURL(url); rej(e); };
+      im.src = url;
+    });
+  }
+}
+const dimsOf = b => [b.width || b.naturalWidth, b.height || b.naturalHeight];
+
+async function addFiles(list) {
+  const files = [...list].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
+  if (!files.length) return;
+  setMsg(`Cargando ${files.length} ${files.length === 1 ? 'foto' : 'fotos'}…`);
+  let bad = 0;
+  for (const file of files) {
+    try {
+      const bmp = await decode(file); const [w, h] = dimsOf(bmp);
+      const preview = scaled(bmp, w, h, PREVIEW_MAX);
+      items.push({ file, name: file.name, w, h, preview, thumb: scaled(preview, preview.width, preview.height, THUMB_MAX), fx: 0.5, fy: 0.5, sel: true });
+      bmp.close && bmp.close();
+    } catch (e) { bad++; items.push({ file, name: file.name, bad: true }); }
+  }
+  if (current < 0 || items[current]?.bad) current = items.findIndex(i => !i.bad);
+  setMsg(bad ? `${bad} ${bad === 1 ? 'archivo no se pudo' : 'archivos no se pudieron'} abrir. Si son HEIC del iPhone, exportalos como JPG.` : '', !!bad);
+  renderAll();
+}
+
+// ---------- formato Instagram: recorte que llena el cuadro ----------
+// fx / fy (por foto): qué parte de la foto queda dentro del recorte (0.5 = centrado)
+function cropRect(sw, sh, ow, oh, fx, fy) {
+  const r = ow / oh; let cw = sw, ch = sw / r;
+  if (ch > sh) { ch = sh; cw = sh * r; }
+  return { sx: (sw - cw) * fx, sy: (sh - ch) * fy, sw: cw, sh: ch, ox: sw - cw, oy: sh - ch };
+}
+function view(it) {
+  if (S.frame === 'orig') return it.preview;
+  const key = S.frame + '|' + it.fx + '|' + it.fy;
+  if (it._vk !== key) {
+    const [ow, oh] = FRAMES[S.frame], src = it.preview, C = cropRect(src.width, src.height, ow, oh, it.fx, it.fy);
+    const c = document.createElement('canvas'); c.width = Math.round(C.sw); c.height = Math.round(C.sh);
+    c.getContext('2d').drawImage(src, C.sx, C.sy, C.sw, C.sh, 0, 0, c.width, c.height);
+    it._v = c; it._vk = key;
+  }
+  return it._v;
+}
+function thumbBase(it) {
+  if (S.frame === 'orig') return it.thumb;
+  const v = view(it);
+  if (it._tk !== it._vk) { it._t = scaled(v, v.width, v.height, THUMB_MAX); it._tk = it._vk; }
+  return it._t;
+}
+const outDims = it => S.frame === 'orig' ? [it.w, it.h] : FRAMES[S.frame];
+// achica de a mitades para que quede nítido también en Safari
+function drawCover(g, src, sw, sh, w, h, it) {
+  const C = cropRect(sw, sh, w, h, it.fx, it.fy);
+  let img = src, x = C.sx, y = C.sy, cw = C.sw, ch = C.sh;
+  while (cw / 2 > w) {
+    const t = document.createElement('canvas'); t.width = Math.round(cw / 2); t.height = Math.round(ch / 2);
+    const tg = t.getContext('2d'); tg.imageSmoothingQuality = 'high'; tg.drawImage(img, x, y, cw, ch, 0, 0, t.width, t.height);
+    img = t; x = 0; y = 0; cw = t.width; ch = t.height;
+  }
+  g.imageSmoothingQuality = 'high'; g.drawImage(img, x, y, cw, ch, 0, 0, w, h);
+}
+
+// ---------- dibujo ----------
+const curItem = () => items[current] && !items[current].bad ? items[current] : sample;
+function drawPreview() {
+  const it = curItem(), v = view(it);
+  const c = $('preview'); c.width = v.width; c.height = v.height;
+  const col = colorFor(it);
+  const g = c.getContext('2d'); g.drawImage(v, 0, 0); stampAll(g, c.width, c.height, it); drawSelection(g, c.width, c.height); drawGuides(g, c.width, c.height);
+  $('tag').hidden = !it.sample;
+  $('name').textContent = it.name;
+  $('dims').textContent = `${outDims(it)[0]} × ${outDims(it)[1]} px · ${S.showLogo ? `logo ${col === WHITE ? 'blanco' : 'naranja'}${S.color === 'auto' ? ' (auto)' : ''}` : 'sin logo'}`;
+}
+function drawThumb(it) {
+  const t = thumbBase(it);
+  const c = document.createElement('canvas'); c.width = t.width; c.height = t.height;
+  const g = c.getContext('2d'); g.drawImage(t, 0, 0); stampAll(g, c.width, c.height, it); return c;
+}
+function renderStrip() {
+  const strip = $('strip'); strip.innerHTML = '';
+  items.forEach((it, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb' + (it.bad ? ' bad' : '');
+    b.setAttribute('aria-label', it.name); b.setAttribute('aria-current', String(i === current));
+    if (it.bad) b.textContent = 'No se pudo abrir ' + it.name; else b.appendChild(drawThumb(it));
+    if (!it.bad) b.onclick = () => { current = i; renderAll(); };
+    if (!it.bad) {
+      // tilde para elegir qué fotos se exportan
+      const pk = document.createElement('button'); pk.type = 'button'; pk.className = 'pick';
+      pk.setAttribute('role', 'checkbox'); pk.setAttribute('aria-checked', String(it.sel)); pk.setAttribute('aria-label', 'Exportar ' + it.name);
+      pk.textContent = it.sel ? '✓' : '';
+      pk.onclick = e => { e.stopPropagation(); it.sel = !it.sel; renderAll(); };
+      b.appendChild(pk); if (!it.sel) b.classList.add('off');
+    }
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Quitar ' + it.name);
+    x.onclick = e => { e.stopPropagation(); items.splice(i, 1); if (current >= items.length || items[current]?.bad) current = items.findIndex(t => !t.bad); renderAll(); };
+    b.appendChild(x); strip.appendChild(b);
+  });
+}
+function renderAll() {
+  invalidateShare(); drawPreview(); renderStrip();
+  const ok = items.filter(i => !i.bad).length;
+  $('count').textContent = ok ? `${ok} ${ok === 1 ? 'foto' : 'fotos'} en la lista` : 'Sin fotos todavía';
+  const ns = exportList().length;
+  $('dlAll').disabled = !ns; $('dlOne').disabled = !ok; $('saveEach').disabled = !ns; $('share').disabled = !ns;
+  $('saveEach').textContent = ns ? `Guardar ${ns} en Fotos` : 'Guardar en Fotos';
+  $('stripHead').hidden = !ok;
+  $('selCount').textContent = `${ns} de ${ok} ${ok === 1 ? 'foto elegida' : 'fotos elegidas'} para exportar`;
+  $('selAll').textContent = ns === ok ? 'Quitar todas' : 'Seleccionar todas'; $('clear').disabled = !items.length;
+}
+const exportList = () => items.filter(i => !i.bad && i.sel !== false);
+let raf = 0;
+const rerender = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(renderAll); };
+
+// ---------- exportar ----------
+function outType(file) {
+  const t = S.format === 'png' ? 'image/png' : (S.format === 'jpg' || S.frame !== 'orig') ? 'image/jpeg'
+    : (['image/png', 'image/webp', 'image/jpeg'].includes(file.type) ? file.type : 'image/jpeg');
+  return { type: t, ext: { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[t] };
+}
+async function render(it) {
+  if (hasText()) await fontReady();
+  const bmp = await decode(it.file); const [bw, bh] = dimsOf(bmp);
+  const [w, h] = S.frame === 'orig' ? [bw, bh] : FRAMES[S.frame];
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d');
+  if (S.frame === 'orig') g.drawImage(bmp, 0, 0); else drawCover(g, bmp, bw, bh, w, h, it);
+  stampAll(g, w, h, it); bmp.close && bmp.close();
+  const { type, ext } = outType(it.file);
+  const blob = await new Promise(r => c.toBlob(r, type, 0.93));
+  c.width = c.height = 0;
+  return { blob, filename: it.name.replace(/\.[^.]+$/, '') + '_sanbao' + (S.frame === 'orig' ? '' : '_' + S.frame.replace(':', 'x')) + '.' + ext };
+}
+let downloads = null;
+// fuera de Claude (app instalada en el celular) descarga con un link común
+const STANDALONE = !!window.SELLO_STANDALONE;
+async function save(filename, data) {
+  if (!downloads && STANDALONE) {
+    const url = URL.createObjectURL(data), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000); setMsg('Listo: ' + filename); return;
+  }
+  if (!downloads) { setMsg('La descarga no está disponible en esta vista. Abrí la app desde claude.ai.', true); return; }
+  try { await downloads.save({ filename, data }); setMsg('Listo: ' + filename); }
+  catch (e) {
+    if (e && e.code === 'declined') setMsg('Descarga cancelada.');
+    else if (e && e.code === 'rate_limited') setMsg('Ya hay una descarga esperando confirmación.', true);
+    else setMsg('No se pudo descargar (' + (e && e.code || 'error') + ').', true);
+  }
+}
+let busy = false;
+$('dlAll').onclick = async () => {
+  if (busy) return; busy = true; $('dlAll').disabled = true;
+  const list = exportList(); const zip = new JSZip(); const used = new Set();
+  try {
+    for (let i = 0; i < list.length; i++) {
+      setMsg(`Estampando ${i + 1} de ${list.length}…`); $('bar').style.width = (i / list.length * 100) + '%';
+      const { blob, filename } = await render(list[i]);
+      let n = filename, k = 2; while (used.has(n)) n = filename.replace(/(\.[^.]+)$/, `-${k++}$1`); used.add(n);
+      zip.file(n, blob, { compression: 'STORE' });
+    }
+    $('bar').style.width = '100%'; setMsg('Armando el .zip…');
+    const out = await zip.generateAsync({ type: 'blob' });
+    await save('san-bao-marca-de-agua.zip', out);
+  } catch (e) { setMsg('Algo falló al procesar las fotos. Probá con menos fotos por tanda.', true); }
+  busy = false; $('dlAll').disabled = false; setTimeout(() => $('bar').style.width = '0', 800);
+};
+$('dlOne').onclick = async () => {
+  const it = items[current]; if (!it || it.bad) return;
+  setMsg('Estampando…'); const { blob, filename } = await render(it); await save(filename, blob);
+};
+$('selAll').onclick = () => { const all = exportList().length === items.filter(i => !i.bad).length; items.forEach(i => { i.sel = !all; }); renderAll(); };
+$('clear').onclick = () => { items = []; current = -1; setMsg(''); renderAll(); };
+
+// ---------- compartir (Instagram / Guardar en Fotos) ----------
+const SHARE_LABEL = 'Guardar en Fotos o Instagram';
+const canShareFiles = (() => {
+  try { return !!(navigator.canShare && navigator.canShare({ files: [new File([new Blob(['x'], { type: 'image/jpeg' })], 'x.jpg', { type: 'image/jpeg' })] })); }
+  catch (e) { return false; }
+})();
+if (STANDALONE) $('home').hidden = false;
+// en la app instalada: un solo menú con todas las fotos ("Guardar N imágenes" o Instagram)
+if (STANDALONE && canShareFiles) { $('share').hidden = false; $('saveEach').hidden = true; }
+
+// sin menú de compartir (por ejemplo dentro de Claude): guarda las fotos de a una, sin .zip
+async function saveOne(filename, blob) {
+  if (downloads) {
+    for (let tries = 0; tries < 3; tries++) {
+      try { await downloads.save({ filename, data: blob }); return true; }
+      catch (e) {
+        if (e && e.code === 'declined') return 'stop';
+        if (e && e.code === 'rate_limited') { await new Promise(r => setTimeout(r, 1500)); continue; }
+        return false;
+      }
+    }
+    return false;
+  }
+  if (STANDALONE) {
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000); return true;
+  }
+  setMsg('Para guardar, abrí esta app desde claude.ai.', true); return 'stop';
+}
+$('saveEach').onclick = async () => {
+  if (busy) return;
+  const list = exportList(); if (!list.length) return;
+  busy = true; $('saveEach').disabled = true; let ok = 0, stopped = false;
+  try {
+    for (let i = 0; i < list.length; i++) {
+      setMsg(`Foto ${i + 1} de ${list.length}: elegí “Guardar imagen”.`); $('bar').style.width = (i / list.length * 100) + '%';
+      const { blob, filename } = await render(list[i]);
+      const r = await saveOne(filename, blob);
+      if (r === 'stop') { stopped = true; break; }
+      if (r) ok++;
+    }
+    setMsg(ok ? `Listo: ${ok} ${ok === 1 ? 'foto guardada' : 'fotos guardadas'}${stopped ? '. Paraste antes de terminar.' : '.'}` : 'No se guardó ninguna foto.', !ok);
+  } catch (e) { setMsg('Algo falló al preparar las fotos. Probá con menos fotos por tanda.', true); }
+  busy = false; $('saveEach').disabled = false; $('bar').style.width = '0';
+};
+let prepared = null;
+function invalidateShare() { if (prepared) { prepared = null; $('share').textContent = SHARE_LABEL; } }
+$('share').onclick = async () => {
+  if (busy) return;
+  const list = exportList(); if (!list.length) return;
+  if (!prepared) {
+    busy = true; $('share').disabled = true;
+    try {
+      const files = [];
+      for (let i = 0; i < list.length; i++) {
+        setMsg(`Preparando ${i + 1} de ${list.length}…`); $('bar').style.width = (i / list.length * 100) + '%';
+        const { blob, filename } = await render(list[i]);
+        files.push(new File([blob], filename, { type: blob.type }));
+      }
+      prepared = files;
+    } catch (e) { setMsg('Algo falló al preparar las fotos. Probá con menos fotos por tanda.', true); }
+    busy = false; $('share').disabled = false; $('bar').style.width = '0';
+    if (!prepared) return;
+  }
+  try {
+    await navigator.share({ files: prepared });
+    setMsg('Listo.'); prepared = null; $('share').textContent = SHARE_LABEL;
+  } catch (e) {
+    if (e && e.name === 'AbortError') { setMsg('Compartir cancelado.'); prepared = null; $('share').textContent = SHARE_LABEL; }
+    else {
+      // el celular pide un toque nuevo cuando preparar las fotos tardó
+      const n = prepared.length;
+      $('share').textContent = `Listo: tocá para compartir ${n} ${n === 1 ? 'foto' : 'fotos'}`;
+      setMsg('Las fotos están listas. Tocá de nuevo el botón para abrir el menú.');
+    }
+  }
+};
+
+function setMsg(t, err) { const m = $('msg'); m.textContent = t; m.classList.toggle('err', !!err); }
+
+// ---------- controles ----------
+const corners = $('corners');
+let layer = 'logo';
+// posición real del texto (si está alineado al logo, la calcula desde el logo)
+function actualTextPos() {
+  const T = textRect(pv.width, pv.height);
+  return [T.aw ? clamp01((T.x - T.m) / T.aw) : 0.5, T.ah ? clamp01((T.y - T.m) / T.ah) : 0.5];
+}
+// deja el texto donde está y lo suelta del logo en los ejes pedidos
+function freezeText(x, y) { const [a, b] = actualTextPos(); S.tx = a; S.ty = b; if (x) S.ax = null; if (y) S.ay = null; }
+const posOf = l => l === 'text' ? actualTextPos() : [S.px, S.py];
+function setPos(l, x, y) { if (l === 'text') { S.tx = x; S.ty = y; } else { S.px = x; S.py = y; } }
+function syncControls() {
+  const [cx, cy] = posOf(layer);
+  $('layer').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.l === layer)));
+  let preset = false;
+  corners.querySelectorAll('button').forEach(b => {
+    const on = Math.abs(+b.dataset.x - cx) < 0.001 && Math.abs(+b.dataset.y - cy) < 0.001;
+    preset = preset || on; b.setAttribute('aria-pressed', String(on));
+  });
+  $('posOut').textContent = preset ? '' : 'Libre';
+  $('posX').value = cx * 100; $('posXOut').textContent = Math.round(cx * 100) + '%';
+  $('posY').value = cy * 100; $('posYOut').textContent = Math.round(cy * 100) + '%';
+  $('size').value = S.size; $('sizeOut').textContent = S.size + '%';
+  $('margin').value = S.margin; $('marginOut').textContent = S.margin + '%';
+  $('opacity').value = S.opacity; $('opacityOut').textContent = S.opacity + '%';
+  const k = SK(shT);
+  $('shTarget').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === shT)));
+  $('shadowLbl').textContent = shT === 'text' ? 'Sombra del texto' : 'Sombra del logo';
+  $('shadow').checked = !!S[k.on]; $('format').value = S.format; $('color').value = S.color;
+  $('shadowBox').hidden = !S[k.on];
+  for (const id of ['shOp', 'shDist', 'shBlur']) { const v = S[k[SLIDER_KEY[id]]]; $(id).value = v; $(id + 'Out').textContent = v + '%'; }
+  $('shDirs').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.d === S[k.dir])));
+  $('shDirOut').textContent = 'Cae ' + (SH_DIRS[S[k.dir]] || SH_DIRS.b)[2];
+  if ($('text').value !== S.text) $('text').value = S.text;
+  $('tsize').value = S.tsize; $('tsizeOut').textContent = S.tsize + '%';
+  $('tweight').value = String(S.tweight); $('showLogo').checked = S.showLogo;
+  $('swatches').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === S.tcolor)));
+  $('gap').value = S.gap; $('gapOut').textContent = S.gap + '%';
+  $('frame').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === S.frame)));
+  $('frameHint').hidden = S.frame === 'orig';
+  $('frameOut').textContent = S.frame === 'orig' ? '' : FRAMES[S.frame].join(' × ');
+  const NX = { left: 'mismo borde izquierdo', center: 'centrado con el logo', right: 'mismo borde derecho', after: 'a la derecha del logo', before: 'a la izquierda del logo' };
+  const NY = { top: 'arriba parejo', middle: 'en la misma línea', bottom: 'abajo parejo', below: 'debajo del logo', above: 'arriba del logo' };
+  const linked = S.showLogo ? [NX[S.ax], NY[S.ay]].filter(Boolean) : [];
+  $('linkState').innerHTML = linked.length ? 'Alineado: <b>' + linked.join(' · ') + '</b>' : 'Texto libre. Acercalo al logo para alinearlo.';
+  $('unlink').disabled = !linked.length;
+}
+corners.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (layer === 'text') freezeText(true, true); setPos(layer, +b.dataset.x, +b.dataset.y); changed(); };
+$('layer').onclick = e => { const b = e.target.closest('button'); if (!b) return; layer = b.dataset.l; shT = layer; syncControls(); rerender(); };
+$('posX').oninput = e => { if (layer === 'text') freezeText(true, false); setPos(layer, +e.target.value / 100, posOf(layer)[1]); changed(); };
+$('posY').oninput = e => { if (layer === 'text') freezeText(false, true); setPos(layer, posOf(layer)[0], +e.target.value / 100); changed(); };
+
+// ---------- mover el logo sobre la vista previa ----------
+const pv = $('preview');
+const clamp01 = v => Math.min(1, Math.max(0, v));
+const snap = v => (Math.abs(v - 0.5) < 0.025 ? 0.5 : v < 0.015 ? 0 : v > 0.985 ? 1 : v);
+function toCanvas(e) {
+  const r = pv.getBoundingClientRect();
+  return [(e.clientX - r.left) * pv.width / r.width, (e.clientY - r.top) * pv.height / r.height];
+}
+const rectOf = l => l === 'text' ? textRect(pv.width, pv.height) : logoRect(pv.width, pv.height);
+function hitIn(R, x, y, k) {
+  const pad = Math.min(R.lh, R.lw) * k;
+  return x >= R.x - pad && x <= R.x + R.lw + pad && y >= R.y - pad && y <= R.y + R.lh + pad;
+}
+// primero lo que está justo debajo del dedo; el margen extra solo cuenta si no tocás ninguno de los dos
+function hitAny(x, y) {
+  const cands = [];
+  if (hasText()) cands.push(['text', rectOf('text')]);
+  if (S.showLogo) cands.push(['logo', rectOf('logo')]);
+  for (const k of [0, 0.5]) {
+    const hits = cands.filter(([, R]) => hitIn(R, x, y, k)).map(([l]) => l);
+    if (hits.length) return hits.includes(layer) ? layer : hits[0];
+  }
+  return null;
+}
+let drag = null;
+pv.addEventListener('pointerdown', e => {
+  const [x, y] = toCanvas(e);
+  const hit = hitAny(x, y);
+  // con formato de Instagram, arrastrar la foto (fuera del logo y del texto) mueve el recorte
+  if (!hit && S.frame !== 'orig') {
+    const it = curItem();
+    drag = { id: e.pointerId, pan: true, x0: x, y0: y, fx0: it.fx, fy0: it.fy, it };
+    pv.setPointerCapture(e.pointerId); pv.classList.add('dragging'); e.preventDefault(); return;
+  }
+  if (hit) layer = hit;
+  // tocar fuera de todo trae la capa elegida (Logo o Texto) a ese punto
+  const R = rectOf(layer);
+  const grab = hit ? [x - R.x, y - R.y] : [R.lw / 2, R.lh / 2];
+  drag = { id: e.pointerId, grab, layer };
+  // al mover el logo: lo ya alineado acompaña; lo libre puede imantarse al texto tal como está ahora
+  if (layer === 'logo' && hasText()) { drag.text = textRect(pv.width, pv.height); drag.ax0 = S.ax; drag.ay0 = S.ay; }
+  pv.setPointerCapture(e.pointerId); pv.classList.add('dragging');
+  moveTo(x, y); e.preventDefault();
+});
+pv.addEventListener('pointermove', e => {
+  const [x, y] = toCanvas(e);
+  if (!drag) { const h = !!hitAny(x, y); pv.classList.toggle('over-logo', h); pv.classList.toggle('pan', !h && S.frame !== 'orig'); return; }
+  if (e.pointerId === drag.id) drag.pan ? panTo(x, y) : moveTo(x, y);
+});
+const endDrag = e => { if (drag && e.pointerId === drag.id) { drag = null; guides = null; pv.classList.remove('dragging'); saveSettings(); invalidateShare(); drawPreview(); renderStrip(); } };
+pv.addEventListener('pointerup', endDrag);
+pv.addEventListener('pointercancel', endDrag);
+function panTo(x, y) {
+  const it = drag.it, src = it.preview, [ow, oh] = FRAMES[S.frame];
+  const C = cropRect(src.width, src.height, ow, oh, drag.fx0, drag.fy0), k = C.sw / pv.width;
+  it.fx = C.ox ? clamp01(drag.fx0 - (x - drag.x0) * k / C.ox) : 0.5;
+  it.fy = C.oy ? clamp01(drag.fy0 - (y - drag.y0) * k / C.oy) : 0.5;
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(drawPreview);
+}
+let guides = null;
+const XR = ['left', 'center', 'right', 'after', 'before'], YR = ['top', 'middle', 'bottom', 'below', 'above'];
+function best(list, f, v, thr) {
+  let o = null;
+  for (const r of list) { const c = f(r), d = Math.abs(c - v); if (d < thr && (!o || d < o.d)) o = { r, v: c, d }; }
+  return o;
+}
+function moveTo(x, y) {
+  const W = pv.width, H = pv.height, short = Math.min(W, H), thr = short * 0.015, g = short * S.gap / 100;
+  const R = rectOf(drag.layer);
+  let nx = x - drag.grab[0], ny = y - drag.grab[1], lockX = false, lockY = false;
+  if (S.showLogo && hasText()) {
+    if (drag.layer === 'text') {
+      // el texto se imanta a bordes, centro o costados del logo
+      const L = logoRect(W, H);
+      const bx = best(XR, r => relX(r, L, R.lw, g), nx, thr), by = best(YR, r => relY(r, L, R.lh, g), ny, thr);
+      S.ax = bx ? bx.r : null; S.ay = by ? by.r : null;
+      if (bx) { nx = bx.v; lockX = true; }
+      if (by) { ny = by.v; lockY = true; }
+    } else {
+      const T = drag.text;
+      if (!drag.ax0) { const bx = best(XR, r => T.x - relX(r, { x: 0, lw: R.lw }, T.lw, g), nx, thr); S.ax = bx ? bx.r : null; if (bx) { nx = bx.v; lockX = true; } }
+      if (!drag.ay0) { const by = best(YR, r => T.y - relY(r, { y: 0, lh: R.lh }, T.lh, g), ny, thr); S.ay = by ? by.r : null; if (by) { ny = by.v; lockY = true; } }
+    }
+  }
+  const px = R.aw ? clamp01((nx - R.m) / R.aw) : 0.5, py = R.ah ? clamp01((ny - R.m) / R.ah) : 0.5;
+  const fx = lockX ? px : snap(px), fy = lockY ? py : snap(py);
+  setPos(drag.layer, fx, fy);
+  guides = { cx: !lockX && fx === 0.5, cy: !lockY && fy === 0.5 };
+  syncControls(); cancelAnimationFrame(raf); raf = requestAnimationFrame(drawPreview);
+}
+pv.addEventListener('keydown', e => {
+  const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+  if (!d) return; e.preventDefault();
+  const step = e.shiftKey ? 0.05 : 0.01;
+  if (layer === 'text') freezeText(!!d[0], !!d[1]);
+  const [cx, cy] = posOf(layer);
+  setPos(layer, clamp01(cx + d[0] * step), clamp01(cy + d[1] * step)); changed();
+});
+for (const id of ['size', 'margin', 'opacity']) $(id).oninput = e => { S[id] = +e.target.value; changed(); };
+$('shadow').onchange = e => { S[SK(shT).on] = e.target.checked; changed(); };
+for (const id of ['shOp', 'shDist', 'shBlur']) $(id).oninput = e => { S[SK(shT)[SLIDER_KEY[id]]] = +e.target.value; changed(); };
+$('shDirs').onclick = e => { const b = e.target.closest('button'); if (!b) return; S[SK(shT).dir] = b.dataset.d; changed(); };
+$('shTarget').onclick = e => { const b = e.target.closest('button'); if (!b) return; shT = b.dataset.t; syncControls(); };
+$('format').onchange = e => { S.format = e.target.value; saveSettings(); };
+$('color').onchange = e => { S.color = e.target.value; changed(); };
+
+// paleta del manual de marca
+const SWATCHES = [['logo', 'Como el logo'], ['#ff914d', 'Naranja'], ['#ffffff', 'Blanco'], ['#f4efe4', 'Crema'], ['#dcd2c0', 'Arena'],
+  ['#f2b544', 'Mostaza'], ['#d9552c', 'Terracota'], ['#8a4a2b', 'Marrón'], ['#264653', 'Petróleo'], ['#0d1b21', 'Noche']];
+for (const [v, n] of SWATCHES) {
+  const b = document.createElement('button'); b.type = 'button'; b.dataset.v = v; b.title = n; b.setAttribute('aria-label', n);
+  if (v === 'logo') { b.className = 'auto'; b.textContent = n; } else b.style.background = v;
+  $('swatches').appendChild(b);
+}
+$('swatches').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.tcolor = b.dataset.v; changed(); };
+let typedOnce = false;
+$('text').oninput = e => {
+  S.text = e.target.value;
+  if (!typedOnce && hasText()) { typedOnce = true; layer = 'text'; }
+  changed();
+};
+$('text').onfocus = () => { if (hasText()) { layer = 'text'; syncControls(); rerender(); } };
+$('tsize').oninput = e => { S.tsize = +e.target.value; changed(); };
+$('gap').oninput = e => { S.gap = +e.target.value; changed(); };
+$('unlink').onclick = () => { freezeText(true, true); changed(); };
+$('frame').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.frame = b.dataset.f; changed(); };
+$('tweight').onchange = e => { S.tweight = +e.target.value; changed(); fontReady().then(rerender); };
+$('showLogo').onchange = e => { S.showLogo = e.target.checked; changed(); };
+function changed() { syncControls(); saveSettings(); rerender(); }
+
+const drop = $('drop');
+$('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } };
+['dragenter', 'dragover'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => document.addEventListener(t, e => { e.preventDefault(); if (t === 'drop' || !e.relatedTarget) drop.classList.remove('over'); }));
+document.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+document.addEventListener('paste', e => { const f = [...(e.clipboardData?.files || [])]; if (f.length) addFiles(f); });
+
+sample = makeSample();
+syncControls(); renderAll();
+fontReady().then(rerender);
+window.claude?.use?.('downloads').then(d => { downloads = d; if (!d) setMsg('Para descargar, abrí esta app desde claude.ai.'); });
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('../sw.js',{scope:'../'}).catch(()=>{}));}</script>
+</body></html>
