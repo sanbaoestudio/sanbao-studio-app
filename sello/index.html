@@ -58,10 +58,15 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   /* celular: la foto queda fija arriba mientras se mueven los ajustes del panel */
   .viewer { order: -1; position: sticky; top: 0; z-index: 10; background: var(--bg); gap: 8px;
     margin-inline: -16px; padding: max(8px, env(safe-area-inset-top, 0px)) 16px 8px; box-shadow: 0 8px 12px -10px rgb(0 0 0 / .45); }
-  .viewer .stage { padding: 8px; min-height: 0; }
-  .viewer .stage canvas { max-height: 36vh; }
-  .viewer .meta { font-size: 12px; }
-  .viewer .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 58px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
+  .viewer .stage { padding: 6px; min-height: 0; }
+  .viewer .stage canvas { max-height: 28vh; }
+  /* el bloque fijo tiene que ser chico para que quede lugar para los ajustes */
+  .viewer .meta { font-size: 12px; flex-wrap: nowrap; }
+  .viewer .meta b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .viewer .meta .mono { white-space: nowrap; flex-shrink: 0; }
+  .viewer .striphead { font-size: 12px; flex-wrap: nowrap; }
+  .viewer .striphead .btn { padding: 4px 10px; min-height: 0; font-size: 12px; }
+  .viewer .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 44px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
 }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 18px; }
@@ -1351,7 +1356,7 @@ for (const id of ['beforeBtn', 'beforeStage']) {
 $('rot').oninput = e => { S.rot = +e.target.value; changed(); };
 onDoubleTap($('rot'), () => { S.rot = 0; changed(); });
 onDoubleTap($('rotOut'), () => { S.rot = 0; changed(); });
-if (window.innerWidth > 860) $('adjBox').open = true;
+$('adjBox').open = true; // abierta también en celular: cerrada no se encontraba
 
 const drop = $('drop');
 $('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
