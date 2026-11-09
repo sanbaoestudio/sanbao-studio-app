@@ -158,6 +158,31 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
 .thumb.off canvas { opacity: .4; }
 .striphead { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
 .thumb.bad { display: grid; place-items: center; font-size: 11px; color: var(--danger); padding: 6px; text-align: center; }
+/* Ajustes: panel plegable para no saturar el celular */
+.fold { border-top: 1px solid var(--line); padding-top: 16px; }
+.fold summary { font-family: var(--f-display); font-weight: 700; font-size: 16px; cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.fold summary::-webkit-details-marker { display: none; }
+.fold summary::after { content: "+"; font: 600 18px/1 var(--f-body); color: var(--accent-ink); margin-left: auto; }
+.fold[open] summary::after { content: "–"; }
+.fold summary small { font: 500 12px var(--f-body); color: var(--muted); }
+.fold summary small.on { color: var(--accent-ink); font-weight: 600; }
+.fold summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.foldbody { display: grid; gap: 16px; padding-top: 14px; }
+.grp { display: grid; gap: 10px; }
+.grp h3 { margin: 0; font: 600 12px var(--f-body); text-transform: uppercase; letter-spacing: .08em; color: var(--accent-ink); }
+.grp .field { gap: 4px; }
+.label output.reset { cursor: pointer; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+.chips span.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+.chips button { border: 0; background: transparent; color: var(--ink); font: 600 12.5px var(--f-body); padding: 5px 10px; cursor: pointer; }
+.chips button.del { padding: 5px 8px 5px 2px; color: var(--muted); }
+.chips button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 14px; }
+.saverow { display: flex; gap: 8px; }
+.saverow input { flex: 1; min-width: 0; font: 500 16px var(--f-body); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.hold { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.hold.down { border-color: var(--accent); color: var(--accent-ink); }
+.ab { position: absolute; top: 12px; right: 12px; z-index: 1; font: 600 12px var(--f-body); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -183,12 +208,40 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
         <div class="label">Formato<output id="frameOut"></output></div>
         <div class="seg seg4" id="frame" role="group" aria-label="Formato de salida">
           <button type="button" data-f="orig">Original</button>
-          <button type="button" data-f="3:4">3:4</button>
+          <button type="button" data-f="1:1">1:1</button>
           <button type="button" data-f="4:5">4:5</button>
+          <button type="button" data-f="3:4">3:4</button>
+          <button type="button" data-f="9:16">9:16</button>
           <button type="button" data-f="4:3">4:3</button>
+          <button type="button" data-f="16:9">16:9</button>
         </div>
         <p class="hint" id="frameHint" hidden>Arrastrá la foto para elegir qué parte queda en el recorte. Cada foto guarda el suyo.</p>
+        <div class="field">
+          <div class="label"><label for="rot">Enderezar</label><output id="rotOut" title="Doble toque para volver a 0"></output></div>
+          <input type="range" id="rot" min="-15" max="15" step="0.1">
+          <p class="hint">Gira todas las fotos y recorta solo lo justo para que no queden bordes vacíos. Doble toque en la barra: vuelve a 0.</p>
+        </div>
       </div>
+
+      <details class="fold" id="adjBox">
+        <summary>Ajustes <small id="adjState">se aplican a todas</small></summary>
+        <div class="foldbody">
+          <div class="field">
+            <div class="label">Presets</div>
+            <div class="chips" id="presets"></div>
+            <div class="saverow">
+              <input type="text" id="presetName" maxlength="30" placeholder="Nombre del preset" aria-label="Nombre del preset nuevo">
+              <button type="button" class="btn ghost small" id="presetSave">Guardar</button>
+            </div>
+          </div>
+          <div id="adjSliders"></div>
+          <div class="row2">
+            <button type="button" class="btn ghost small hold" id="beforeBtn">Mantené: antes</button>
+            <button type="button" class="btn ghost small" id="adjReset">Restablecer</button>
+          </div>
+          <p class="hint">Doble toque en una barra (o en su número) la vuelve a 0. La marca de agua no se ve afectada.</p>
+        </div>
+      </details>
 
       <div class="field">
         <div class="label">Posición<output id="posOut"></output></div>
@@ -335,6 +388,7 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
     <section class="viewer">
       <div class="stage">
         <span class="tag" id="tag">Ejemplo</span>
+        <button type="button" class="hold ab" id="beforeStage" hidden>Antes / después</button>
         <canvas id="preview" width="1200" height="800" tabindex="0" aria-label="Vista previa con marca de agua. Arrastrá el logo o usá las flechas para moverlo."></canvas>
       </div>
       <div class="meta"><b id="name">Imagen de ejemplo</b><span class="mono" id="dims"></span></div>
@@ -352,7 +406,8 @@ const ORANGE = '#ff914d';
 const PATHS = LOGO.map(d => new Path2D(d));
 const PREVIEW_MAX = 1600, THUMB_MAX = 240;
 // formatos de Instagram (las horizontales se exportan a 1080 de ancho, como las muestra Instagram)
-const FRAMES = { '3:4': [1080, 1440], '4:5': [1080, 1350], '4:3': [1080, 810] };
+// 9:16 es historia/Reel (1080 × 1920); 16:9 va a 1920 × 1080 porque se usa para YouTube o pantallas
+const FRAMES = { '1:1': [1080, 1080], '3:4': [1080, 1440], '4:5': [1080, 1350], '4:3': [1080, 810], '9:16': [1080, 1920], '16:9': [1920, 1080] };
 
 const $ = id => document.getElementById(id);
 $('brandLogo').innerHTML = LOGO.map(d => `<path fill="${ORANGE}" d="${d}"/>`).join('');
@@ -366,7 +421,9 @@ const DEFAULTS = { px: 1, py: 1, size: 18, margin: 3, opacity: 100, shadow: fals
   // sombra: opacidad en %, distancia y tamaño (desenfoque) en % de la altura del logo o de la letra
   shOp: 35, shDist: 6, shBlur: 35, shDir: 'b',
   // la sombra del texto va aparte, con sus propios valores
-  tshadow: null, tshOp: 35, tshDist: 6, tshBlur: 35, tshDir: 'b' };
+  tshadow: null, tshOp: 35, tshDist: 6, tshBlur: 35, tshDir: 'b',
+  // enderezar en grados (para todo el lote) y ajustes de imagen (ver ADJ0)
+  rot: 0, adj: null };
 const SK = t => t === 'text' ? { on: 'tshadow', op: 'tshOp', dist: 'tshDist', blur: 'tshBlur', dir: 'tshDir' }
   : { on: 'shadow', op: 'shOp', dist: 'shDist', blur: 'shBlur', dir: 'shDir' };
 const SLIDER_KEY = { shOp: 'op', shDist: 'dist', shBlur: 'blur' };
@@ -380,6 +437,169 @@ try { Object.assign(S, JSON.parse(localStorage.getItem('sello-ajustes') || '{}')
 if (S.tshadow === null || S.tshadow === undefined) S.tshadow = !!S.shadow;
 if (S.corner) { S.px = S.corner.endsWith('l') ? 0 : 1; S.py = S.corner.startsWith('t') ? 0 : 1; delete S.corner; }
 const saveSettings = () => { try { localStorage.setItem('sello-ajustes', JSON.stringify(S)); } catch (e) {} };
+
+// ---------- ajustes de imagen ----------
+// Se aplican en este orden: enderezar → recorte → ajustes → marca de agua (la marca nunca se ajusta).
+const ADJ0 = { exp: 0, con: 0, hi: 0, sh: 0, temp: 0, tint: 0, sat: 0, vib: 0, sharp: 0, vig: 0 };
+const ADJ_KEYS = Object.keys(ADJ0);
+S.adj = { ...ADJ0, ...(S.adj || {}) };
+if (!FRAMES[S.frame] && S.frame !== 'orig') S.frame = 'orig';
+S.rot = Math.max(-15, Math.min(15, +S.rot || 0));
+const signed = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v);
+const ADJ_UI = [
+  ['Luz', [['exp', 'Exposición', -2, 2, 0.05, v => signed(+v.toFixed(2)) + ' EV'], ['con', 'Contraste', -100, 100, 1], ['hi', 'Altas luces', -100, 100, 1], ['sh', 'Sombras', -100, 100, 1]]],
+  ['Color', [['temp', 'Temperatura', -100, 100, 1, v => signed(v) + (v < 0 ? ' frío' : v > 0 ? ' cálido' : '')], ['tint', 'Tinte', -100, 100, 1, v => signed(v) + (v < 0 ? ' verde' : v > 0 ? ' magenta' : '')],
+    ['sat', 'Saturación', -100, 100, 1], ['vib', 'Intensidad', -100, 100, 1]]],
+  ['Terminación', [['sharp', 'Nitidez', 0, 100, 1], ['vig', 'Viñeta', -100, 100, 1]]],
+];
+// Presets de fábrica.
+// Temperatura: ganancias en lineal R × 0.885^(−t/30) y B × 1.15^(−t/30), G igual.
+// Está calibrada para que temperatura −30 sea exactamente el "Frío limpio" aprobado (R × 0.885, B × 1.15).
+// +100 da R × 1.50 y B × 0.63; −100 da R × 0.67 y B × 1.59.
+// Cálido San Bao traduce retoque-san-bao/recetas/calido-san-bao.txt: blancos −10 se suman a altas luces,
+// negros +12 a sombras, 6200 K ≈ temperatura +20 (unos 20 mired más cálido que luz día),
+// nitidez 30 de Lightroom ≈ 25 acá. Textura, claridad, neblina y grano no tienen equivalente.
+const FACTORY = [
+  ['Natural', { ...ADJ0 }],
+  ['Frío limpio', { ...ADJ0, temp: -30, con: 12 }],
+  ['Cálido San Bao', { ...ADJ0, exp: 0.15, con: 10, hi: -40, sh: 25, temp: 20, tint: 8, vib: 12, sat: -8, sharp: 25, vig: -12 }],
+];
+let presets = [];
+try { presets = JSON.parse(localStorage.getItem('sello-presets') || '[]').filter(p => p && p.n && p.a); } catch (e) { presets = []; }
+const savePresets = () => { try { localStorage.setItem('sello-presets', JSON.stringify(presets)); } catch (e) {} };
+const adjNeutral = A => ADJ_KEYS.every(k => !A[k]);
+const adjKey = () => ADJ_KEYS.map(k => S.adj[k]).join(',');
+
+const S2L = new Float32Array(256);
+for (let i = 0; i < 256; i++) { const v = i / 255; S2L[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+const L2S = x => x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055;
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+// Prepara las tablas (LUT) una vez por cambio; después cada píxel son unas pocas sumas y lecturas de tabla.
+function prepAdj(A) {
+  if (adjNeutral(A)) return null;
+  // exposición y temperatura/tinte: ganancias por canal en espacio lineal
+  const e = Math.pow(2, A.exp), gains = [e * Math.pow(0.885, -A.temp / 30), e * Math.pow(0.85, A.tint / 50), e * Math.pow(1.15, -A.temp / 30)];
+  // contraste: curva S alrededor del gris medio (pendiente p en el medio, extremos fijos)
+  const p = Math.pow(2, A.con / 100 * 1.3);
+  const lut = gains.map(gc => {
+    const L = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let v = L2S(Math.min(1, S2L[i] * gc));
+      if (p !== 1) v = v < 0.5 ? 0.5 * Math.pow(2 * v, p) : 1 - 0.5 * Math.pow(2 - 2 * v, p);
+      L[i] = v;
+    }
+    return L;
+  });
+  // altas luces y sombras: corrimiento según la luminancia, con máscaras suaves (siempre monótono, no invierte tonos)
+  let hs = null;
+  if (A.hi || A.sh) {
+    hs = new Float32Array(1025); const h = A.hi / 100, s = A.sh / 100;
+    for (let i = 0; i <= 1024; i++) {
+      const Y = i / 1024;
+      hs[i] = h * (h < 0 ? 1.4 : 0.9) * (1 - Y) * Y * Y * Y + s * (s > 0 ? 1.4 : 0.9) * Y * Math.pow(1 - Y, 3);
+    }
+  }
+  let vig = null;
+  if (A.vig) { vig = new Float32Array(1025); for (let i = 0; i <= 1024; i++) vig[i] = smooth(0.45, 1.35, Math.sqrt(i / 512)); }
+  return { lut, hs, vig, vigA: A.vig / 100 * 0.65, sat: 1 + A.sat / 100, vib: A.vib / 100, sharp: A.sharp / 100 * 1.6 };
+}
+
+// Nitidez: unsharp suave sobre la luminancia (no mete halos de color). Radio relativo al tamaño de la foto.
+function detailMap(d, w, h, r0, r1, R) {
+  const ya = Math.max(0, r0 - R), yb = Math.min(h, r1 + R), n = 2 * R + 1, inv = 1 / (n * n), rows = yb - ya;
+  const L = new Float32Array(w * rows), Hs = new Float32Array(w * rows);
+  for (let y = ya, o = 0, i = ya * w * 4; y < yb; y++) for (let x = 0; x < w; x++, o++, i += 4) L[o] = (d[i] + 2 * d[i + 1] + d[i + 2]) * 0.25;
+  // suma horizontal por ventana deslizante (bordes repetidos); el medio sin chequeos para que sea rápido
+  for (let y = 0; y < rows; y++) {
+    const o = y * w, e = w - 1;
+    let s = 0;
+    for (let k = -R; k <= R; k++) s += L[o + (k < 0 ? 0 : k > e ? e : k)];
+    for (let x = 0; x < w; x++) {
+      Hs[o + x] = s;
+      const a = x + R + 1, b = x - R;
+      s += L[o + (a > e ? e : a)] - L[o + (b < 0 ? 0 : b)];
+    }
+  }
+  const row = y => (y < ya ? 0 : y >= yb ? yb - 1 - ya : y - ya) * w;
+  const col = new Float32Array(w), det = new Float32Array(w * (r1 - r0));
+  for (let k = -R; k <= R; k++) { const o = row(r0 + k); for (let x = 0; x < w; x++) col[x] += Hs[o + x]; }
+  for (let y = r0; y < r1; y++) {
+    const o = (y - ya) * w, od = (y - r0) * w, a = row(y + R + 1), b = row(y - R);
+    for (let x = 0; x < w; x++) { det[od + x] = L[o + x] - col[x] * inv; col[x] += Hs[a + x] - Hs[b + x]; }
+  }
+  return det;
+}
+
+// Aplica los ajustes a las filas r0..r1 de un bloque de píxeles d (w × h).
+// ox, oy: dónde cae el bloque dentro de la foto entera (GW × GH), para la viñeta.
+function applyAdj(d, w, h, P, ox, oy, GW, GH, r0 = 0, r1 = h, noSharp = false) {
+  const [LR, LG, LB] = P.lut, hs = P.hs, vig = P.vig, vA = P.vigA, fs = P.sat, vb = P.vib, colorOn = fs !== 1 || vb;
+  const R = Math.max(1, Math.round(Math.min(GW, GH) / 1200));
+  const det = P.sharp && !noSharp ? detailMap(d, w, h, r0, r1, R) : null, amt = P.sharp;
+  let vx = null;
+  if (vig) { vx = new Float32Array(w); for (let x = 0; x < w; x++) { const n = (ox + x + 0.5 - GW / 2) / (GW / 2); vx[x] = n * n; } }
+  for (let y = r0; y < r1; y++) {
+    const ny = (oy + y + 0.5 - GH / 2) / (GH / 2), ny2 = ny * ny;
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      let R8 = d[i], G8 = d[i + 1], B8 = d[i + 2];
+      if (det) {
+        const dd = amt * det[(y - r0) * w + x];
+        R8 = R8 + dd; R8 = R8 < 0 ? 0 : R8 > 255 ? 255 : (R8 + 0.5) | 0;
+        G8 = G8 + dd; G8 = G8 < 0 ? 0 : G8 > 255 ? 255 : (G8 + 0.5) | 0;
+        B8 = B8 + dd; B8 = B8 < 0 ? 0 : B8 > 255 ? 255 : (B8 + 0.5) | 0;
+      }
+      let r = LR[R8], g = LG[G8], b = LB[B8];
+      if (hs) { const dl = hs[((0.2126 * r + 0.7152 * g + 0.0722 * b) * 1024 + 0.5) | 0]; r += dl; g += dl; b += dl; }
+      if (colorOn) {
+        const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        let f = fs;
+        if (vb) {
+          // intensidad: empuja más lo poco saturado y cuida la piel (tonos entre rojo y amarillo)
+          const mx = r > g ? (r > b ? r : b) : (g > b ? g : b), mn = r < g ? (r < b ? r : b) : (g < b ? g : b);
+          const s0 = Math.min(1, mx - mn);
+          let wk = 1;
+          if (r > g && g > b) { const hh = (g - b) / (r - b); if (hh > 0.15 && hh < 0.85) wk = 0.35; }
+          f *= 1 + vb * wk * (vb > 0 ? (1 - s0) * (1 - s0) : 1);
+        }
+        r = Y + (r - Y) * f; g = Y + (g - Y) * f; b = Y + (b - Y) * f;
+      }
+      if (vig) {
+        let q = vx[x] + ny2; q = q > 2 ? 2 : q;
+        const m = vig[(q * 512 + 0.5) | 0] * vA;
+        if (m < 0) { const k = 1 + m; r *= k; g *= k; b *= k; }
+        else if (m > 0) { r += (1 - r) * m; g += (1 - g) * m; b += (1 - b) * m; }
+      }
+      d[i] = r * 255; d[i + 1] = g * 255; d[i + 2] = b * 255;
+    }
+  }
+}
+let _pk = null, _p = null;
+const getP = () => { const k = adjKey(); if (k !== _pk) { _pk = k; _p = prepAdj(S.adj); } return _p; };
+// canvas chico (vista previa, miniaturas): de una
+const rctx = c => c.getContext('2d', { willReadFrequently: true });
+function adjustSync(c, P) {
+  const g = rctx(c), img = g.getImageData(0, 0, c.width, c.height);
+  applyAdj(img.data, c.width, c.height, P, 0, 0, c.width, c.height);
+  g.putImageData(img, 0, 0); return c;
+}
+// foto entera al exportar: por franjas, devolviendo el control entre una y otra para no colgar la pestaña.
+// Cada franja se lee antes de escribir la anterior, así la nitidez siempre mira píxeles sin procesar.
+async function adjustBlocks(g, W, H, P) {
+  const R = Math.max(1, Math.round(Math.min(W, H) / 1200)), M = P.sharp ? R + 1 : 0;
+  const BH = Math.max(32, Math.floor(2e6 / W));
+  let pend = null;
+  for (let y0 = 0; y0 < H; y0 += BH) {
+    const rows = Math.min(BH, H - y0), top = Math.max(0, y0 - M), bot = Math.min(H, y0 + rows + M);
+    const img = g.getImageData(0, top, W, bot - top);
+    if (pend) g.putImageData(pend.img, 0, pend.top, 0, pend.r0, W, pend.rows);
+    applyAdj(img.data, W, bot - top, P, 0, top, W, H, y0 - top, y0 - top + rows);
+    pend = { img, top, r0: y0 - top, rows };
+    await new Promise(r => setTimeout(r, 0));
+  }
+  if (pend) g.putImageData(pend.img, 0, pend.top, 0, pend.r0, W, pend.rows);
+}
 
 // Tamaño = ancho del logo en % del lado corto de la foto; así se ve igual en verticales y horizontales
 function logoRect(w, h) {
@@ -418,6 +638,8 @@ function autoColor(src, L) {
   const w = Math.max(1, Math.min(src.width - x, Math.ceil(L.lw))), h = Math.max(1, Math.min(src.height - y, Math.ceil(L.lh)));
   let d;
   try { d = src.getContext('2d').getImageData(x, y, w, h).data; } catch (e) { return ORANGE; }
+  // decide sobre la foto ya ajustada (solo esa zona, así es rápido y da igual en vista previa, miniatura y descarga)
+  const P = getP(); if (P) applyAdj(d, w, h, P, x, y, src.width, src.height, 0, h, true);
   let lostO = 0, lostW = 0, n = 0;
   for (let i = 0; i < d.length; i += 16) {
     const p = lab([d[i], d[i + 1], d[i + 2]]); n++;
@@ -519,7 +741,7 @@ function drawGuides(ctx, w, h) {
 const fontReady = () => document.fonts && document.fonts.load ? document.fonts.load(`${S.tweight} 40px "Bricolage Grotesque"`).catch(() => {}) : Promise.resolve();
 
 // ---------- fotos ----------
-let items = [], current = -1;
+let items = [], current = -1, uid = 0, before = false;
 let sample = null;
 
 function fit(w, h, max) { const r = Math.min(1, max / Math.max(w, h)); return [Math.round(w * r), Math.round(h * r)]; }
@@ -537,7 +759,7 @@ function makeSample() {
   g.fillStyle = sea; g.fillRect(0, 520, 1200, 280);
   g.strokeStyle = 'rgba(255,200,150,.55)'; g.lineCap = 'round';
   for (let i = 0; i < 9; i++) { g.lineWidth = 5 - i * .4; const w = 200 - i * 18; g.beginPath(); g.moveTo(760 - w / 2, 545 + i * 22); g.lineTo(760 + w / 2, 545 + i * 22); g.stroke(); }
-  return { name: 'Imagen de ejemplo', w: 1200, h: 800, preview: c, thumb: scaled(c, 1200, 800, THUMB_MAX), sample: true, fx: 0.5, fy: 0.5 };
+  return { name: 'Imagen de ejemplo', w: 1200, h: 800, preview: c, thumb: scaled(c, 1200, 800, THUMB_MAX), sample: true, fx: 0.5, fy: 0.5, id: 0 };
 }
 
 async function decode(file) {
@@ -562,7 +784,7 @@ async function addFiles(list) {
     try {
       const bmp = await decode(file); const [w, h] = dimsOf(bmp);
       const preview = scaled(bmp, w, h, PREVIEW_MAX);
-      items.push({ file, name: file.name, w, h, preview, thumb: scaled(preview, preview.width, preview.height, THUMB_MAX), fx: 0.5, fy: 0.5, sel: true });
+      items.push({ id: ++uid, file, name: file.name, w, h, preview, thumb: scaled(preview, preview.width, preview.height, THUMB_MAX), fx: 0.5, fy: 0.5, sel: true });
       bmp.close && bmp.close();
     } catch (e) { bad++; items.push({ file, name: file.name, bad: true }); }
   }
@@ -573,54 +795,101 @@ async function addFiles(list) {
 
 // ---------- formato Instagram: recorte que llena el cuadro ----------
 // fx / fy (por foto): qué parte de la foto queda dentro del recorte (0.5 = centrado)
-function cropRect(sw, sh, ow, oh, fx, fy) {
-  const r = ow / oh; let cw = sw, ch = sw / r;
-  if (ch > sh) { ch = sh; cw = sh * r; }
-  return { sx: (sw - cw) * fx, sy: (sh - ch) * fy, sw: cw, sh: ch, ox: sw - cw, oy: sh - ch };
+// Con la foto girada (S.rot), el recorte es el más grande con esa proporción que entra sin bordes vacíos:
+// girado de vuelta a la foto, su caja (ex, ey de medio lado) tiene que caber en sw × sh.
+const RAD = Math.PI / 180;
+const plain = () => S.frame === 'orig' && !S.rot;
+const canPan = () => S.frame !== 'orig' || !!S.rot;
+function cropGeom(sw, sh, it) {
+  const r = S.frame === 'orig' ? sw / sh : FRAMES[S.frame][0] / FRAMES[S.frame][1];
+  const t = S.rot * RAD, c = Math.abs(Math.cos(t)), s = Math.abs(Math.sin(t));
+  const cw = Math.min(sw / (c + s / r), sh / (s + c / r)), ch = cw / r;
+  const ex = (cw * c + ch * s) / 2, ey = (cw * s + ch * c) / 2;
+  const ox = Math.max(0, sw - 2 * ex), oy = Math.max(0, sh - 2 * ey);
+  return { cw, ch, t, ox, oy, ux: ex + ox * it.fx, uy: ey + oy * it.fy };
 }
+// dibuja la foto girada y recortada en un cuadro W × H. Achica de a mitades para que quede nítido también en Safari
+function drawGeom(g, src, sw, sh, W, H, G) {
+  let img = src, k = 1;
+  while (W / (G.cw * k) < 0.5) {
+    const t = document.createElement('canvas'); t.width = Math.max(1, Math.round(sw * k / 2)); t.height = Math.max(1, Math.round(sh * k / 2));
+    const tg = t.getContext('2d'); tg.imageSmoothingQuality = 'high'; tg.drawImage(img, 0, 0, t.width, t.height);
+    if (img !== src) img.width = img.height = 0;
+    img = t; k = t.width / sw;
+  }
+  const s = W / (G.cw * k);
+  g.save(); g.imageSmoothingQuality = 'high';
+  g.translate(W / 2, H / 2); g.scale(s, s); g.rotate(G.t); g.translate(-G.ux * k, -G.uy * k);
+  g.drawImage(img, 0, 0); g.restore();
+  if (img !== src) img.width = img.height = 0;
+}
+const geoKey = it => S.frame + '|' + S.rot + '|' + it.fx + '|' + it.fy;
+// vista previa sin ajustes (recortada y enderezada)
 function view(it) {
-  if (S.frame === 'orig') return it.preview;
-  const key = S.frame + '|' + it.fx + '|' + it.fy;
+  if (plain()) return it.preview;
+  const key = geoKey(it);
   if (it._vk !== key) {
-    const [ow, oh] = FRAMES[S.frame], src = it.preview, C = cropRect(src.width, src.height, ow, oh, it.fx, it.fy);
-    const c = document.createElement('canvas'); c.width = Math.round(C.sw); c.height = Math.round(C.sh);
-    c.getContext('2d').drawImage(src, C.sx, C.sy, C.sw, C.sh, 0, 0, c.width, c.height);
+    const src = it.preview, G = cropGeom(src.width, src.height, it);
+    const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(G.cw)); c.height = Math.max(1, Math.round(G.ch));
+    drawGeom(c.getContext('2d'), src, src.width, src.height, c.width, c.height, G);
     it._v = c; it._vk = key;
   }
   return it._v;
 }
+// vista previa con ajustes: se guarda una sola (la de la foto que se está viendo), para no llenar la memoria del celular
+// Mientras se arrastra una barra (quick) se procesa a media resolución; al soltar, completa.
+let shownCache = { key: null, c: null }, quick = false, settleT = 0;
+function shown(it) {
+  const P = getP(); if (!P) return view(it);
+  const q = quick ? 0.5 : 1, key = it.id + '|' + geoKey(it) + '|' + adjKey() + '|' + q;
+  if (shownCache.key !== key) {
+    const v = view(it), c = shownCache.c && shownCache.c !== v ? shownCache.c : document.createElement('canvas');
+    c.width = Math.max(1, Math.round(v.width * q)); c.height = Math.max(1, Math.round(v.height * q));
+    const g = rctx(c); g.imageSmoothingQuality = 'high'; g.drawImage(v, 0, 0, c.width, c.height);
+    shownCache = { key, c: adjustSync(c, P) };
+  }
+  return shownCache.c;
+}
+// miniatura: recorte hecho directo desde la vista previa y ajustes sobre la miniatura (rápido aunque haya muchas fotos)
 function thumbBase(it) {
-  if (S.frame === 'orig') return it.thumb;
-  const v = view(it);
-  if (it._tk !== it._vk) { it._t = scaled(v, v.width, v.height, THUMB_MAX); it._tk = it._vk; }
+  if (plain()) return it.thumb;
+  const key = geoKey(it);
+  if (it._tk !== key) {
+    const src = it.preview, G = cropGeom(src.width, src.height, it), [tw, th] = fit(G.cw, G.ch, THUMB_MAX);
+    const c = document.createElement('canvas'); c.width = Math.max(1, tw); c.height = Math.max(1, th);
+    drawGeom(c.getContext('2d'), src, src.width, src.height, c.width, c.height, G);
+    it._t = c; it._tk = key;
+  }
   return it._t;
 }
-const outDims = it => S.frame === 'orig' ? [it.w, it.h] : FRAMES[S.frame];
-// achica de a mitades para que quede nítido también en Safari
-function drawCover(g, src, sw, sh, w, h, it) {
-  const C = cropRect(sw, sh, w, h, it.fx, it.fy);
-  let img = src, x = C.sx, y = C.sy, cw = C.sw, ch = C.sh;
-  while (cw / 2 > w) {
-    const t = document.createElement('canvas'); t.width = Math.round(cw / 2); t.height = Math.round(ch / 2);
-    const tg = t.getContext('2d'); tg.imageSmoothingQuality = 'high'; tg.drawImage(img, x, y, cw, ch, 0, 0, t.width, t.height);
-    img = t; x = 0; y = 0; cw = t.width; ch = t.height;
+function thumbShown(it) {
+  const P = getP(), t = thumbBase(it); if (!P) return t;
+  const key = geoKey(it) + '|' + adjKey();
+  if (it._ak !== key) {
+    const c = document.createElement('canvas'); c.width = t.width; c.height = t.height; rctx(c).drawImage(t, 0, 0);
+    it._a = adjustSync(c, P); it._ak = key;
   }
-  g.imageSmoothingQuality = 'high'; g.drawImage(img, x, y, cw, ch, 0, 0, w, h);
+  return it._a;
+}
+function outDims(it) {
+  if (S.frame !== 'orig') return FRAMES[S.frame];
+  if (!S.rot) return [it.w, it.h];
+  const G = cropGeom(it.w, it.h, it); return [Math.round(G.cw), Math.round(G.ch)];
 }
 
 // ---------- dibujo ----------
 const curItem = () => items[current] && !items[current].bad ? items[current] : sample;
 function drawPreview() {
-  const it = curItem(), v = view(it);
-  const c = $('preview'); c.width = v.width; c.height = v.height;
+  const it = curItem(), base = view(it), v = before ? base : shown(it);
+  const c = $('preview'); c.width = base.width; c.height = base.height;
   const col = colorFor(it);
-  const g = c.getContext('2d'); g.drawImage(v, 0, 0); stampAll(g, c.width, c.height, it); drawSelection(g, c.width, c.height); drawGuides(g, c.width, c.height);
+  const g = c.getContext('2d'); g.drawImage(v, 0, 0, c.width, c.height); stampAll(g, c.width, c.height, it); drawSelection(g, c.width, c.height); drawGuides(g, c.width, c.height);
   $('tag').hidden = !it.sample;
   $('name').textContent = it.name;
   $('dims').textContent = `${outDims(it)[0]} × ${outDims(it)[1]} px · ${S.showLogo ? `logo ${col === WHITE ? 'blanco' : 'naranja'}${S.color === 'auto' ? ' (auto)' : ''}` : 'sin logo'}`;
 }
 function drawThumb(it) {
-  const t = thumbBase(it);
+  const t = thumbShown(it);
   const c = document.createElement('canvas'); c.width = t.width; c.height = t.height;
   const g = c.getContext('2d'); g.drawImage(t, 0, 0); stampAll(g, c.width, c.height, it); return c;
 }
@@ -668,11 +937,15 @@ function outType(file) {
 async function render(it) {
   if (hasText()) await fontReady();
   const bmp = await decode(it.file); const [bw, bh] = dimsOf(bmp);
-  const [w, h] = S.frame === 'orig' ? [bw, bh] : FRAMES[S.frame];
+  // orden: enderezar → recorte → ajustes → marca de agua
+  const G = cropGeom(bw, bh, it);
+  const [w, h] = S.frame !== 'orig' ? FRAMES[S.frame] : S.rot ? [Math.round(G.cw), Math.round(G.ch)] : [bw, bh];
   const c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d');
-  if (S.frame === 'orig') g.drawImage(bmp, 0, 0); else drawCover(g, bmp, bw, bh, w, h, it);
-  stampAll(g, w, h, it); bmp.close && bmp.close();
+  const g = c.getContext('2d', { willReadFrequently: true });
+  if (plain()) g.drawImage(bmp, 0, 0); else drawGeom(g, bmp, bw, bh, w, h, G);
+  bmp.close && bmp.close();
+  const P = getP(); if (P) await adjustBlocks(g, w, h, P);
+  stampAll(g, w, h, it);
   const { type, ext } = outType(it.file);
   const blob = await new Promise(r => c.toBlob(r, type, 0.93));
   c.width = c.height = 0;
@@ -840,13 +1113,15 @@ function syncControls() {
   $('swatches').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === S.tcolor)));
   $('gap').value = S.gap; $('gapOut').textContent = S.gap + '%';
   $('frame').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === S.frame)));
-  $('frameHint').hidden = S.frame === 'orig';
+  $('frameHint').hidden = !canPan();
+  $('rot').value = S.rot; $('rotOut').textContent = signed(+S.rot.toFixed(1)) + '°';
   $('frameOut').textContent = S.frame === 'orig' ? '' : FRAMES[S.frame].join(' × ');
   const NX = { left: 'mismo borde izquierdo', center: 'centrado con el logo', right: 'mismo borde derecho', after: 'a la derecha del logo', before: 'a la izquierda del logo' };
   const NY = { top: 'arriba parejo', middle: 'en la misma línea', bottom: 'abajo parejo', below: 'debajo del logo', above: 'arriba del logo' };
   const linked = S.showLogo ? [NX[S.ax], NY[S.ay]].filter(Boolean) : [];
   $('linkState').innerHTML = linked.length ? 'Alineado: <b>' + linked.join(' · ') + '</b>' : 'Texto libre. Acercalo al logo para alinearlo.';
   $('unlink').disabled = !linked.length;
+  syncAdj();
 }
 corners.onclick = e => { const b = e.target.closest('button'); if (!b) return; if (layer === 'text') freezeText(true, true); setPos(layer, +b.dataset.x, +b.dataset.y); changed(); };
 $('layer').onclick = e => { const b = e.target.closest('button'); if (!b) return; layer = b.dataset.l; shT = layer; syncControls(); rerender(); };
@@ -882,7 +1157,7 @@ pv.addEventListener('pointerdown', e => {
   const [x, y] = toCanvas(e);
   const hit = hitAny(x, y);
   // con formato de Instagram, arrastrar la foto (fuera del logo y del texto) mueve el recorte
-  if (!hit && S.frame !== 'orig') {
+  if (!hit && canPan()) {
     const it = curItem();
     drag = { id: e.pointerId, pan: true, x0: x, y0: y, fx0: it.fx, fy0: it.fy, it };
     pv.setPointerCapture(e.pointerId); pv.classList.add('dragging'); e.preventDefault(); return;
@@ -899,17 +1174,20 @@ pv.addEventListener('pointerdown', e => {
 });
 pv.addEventListener('pointermove', e => {
   const [x, y] = toCanvas(e);
-  if (!drag) { const h = !!hitAny(x, y); pv.classList.toggle('over-logo', h); pv.classList.toggle('pan', !h && S.frame !== 'orig'); return; }
+  if (!drag) { const h = !!hitAny(x, y); pv.classList.toggle('over-logo', h); pv.classList.toggle('pan', !h && canPan()); return; }
   if (e.pointerId === drag.id) drag.pan ? panTo(x, y) : moveTo(x, y);
 });
 const endDrag = e => { if (drag && e.pointerId === drag.id) { drag = null; guides = null; pv.classList.remove('dragging'); saveSettings(); invalidateShare(); drawPreview(); renderStrip(); } };
 pv.addEventListener('pointerup', endDrag);
 pv.addEventListener('pointercancel', endDrag);
 function panTo(x, y) {
-  const it = drag.it, src = it.preview, [ow, oh] = FRAMES[S.frame];
-  const C = cropRect(src.width, src.height, ow, oh, drag.fx0, drag.fy0), k = C.sw / pv.width;
-  it.fx = C.ox ? clamp01(drag.fx0 - (x - drag.x0) * k / C.ox) : 0.5;
-  it.fy = C.oy ? clamp01(drag.fy0 - (y - drag.y0) * k / C.oy) : 0.5;
+  // la foto sigue al dedo: el corrimiento en pantalla se pasa a la foto sin girar
+  const it = drag.it, src = it.preview;
+  const G = cropGeom(src.width, src.height, { fx: drag.fx0, fy: drag.fy0 }), k = G.cw / pv.width;
+  const dx = (x - drag.x0) * k, dy = (y - drag.y0) * k, c = Math.cos(G.t), s = Math.sin(G.t);
+  const ux = dx * c + dy * s, uy = -dx * s + dy * c;
+  it.fx = G.ox > 0.5 ? clamp01(drag.fx0 - ux / G.ox) : 0.5;
+  it.fy = G.oy > 0.5 ? clamp01(drag.fy0 - uy / G.oy) : 0.5;
   cancelAnimationFrame(raf); raf = requestAnimationFrame(drawPreview);
 }
 let guides = null;
@@ -982,6 +1260,85 @@ $('frame').onclick = e => { const b = e.target.closest('button'); if (!b) return
 $('tweight').onchange = e => { S.tweight = +e.target.value; changed(); fontReady().then(rerender); };
 $('showLogo').onchange = e => { S.showLogo = e.target.checked; changed(); };
 function changed() { syncControls(); saveSettings(); rerender(); }
+
+// ---------- controles de ajustes ----------
+// doble clic o doble toque vuelve a 0 (en iPhone el doble toque no dispara dblclick sobre una barra, por eso se cuenta a mano)
+function onDoubleTap(el, fn) {
+  let last = 0;
+  el.addEventListener('pointerup', e => { const t = e.timeStamp; if (t - last < 350) { last = 0; fn(); } else last = t; });
+  el.addEventListener('dblclick', e => { e.preventDefault(); fn(); });
+}
+const adjFmt = {};
+for (const [title, list] of ADJ_UI) {
+  const grp = document.createElement('div'); grp.className = 'grp';
+  grp.innerHTML = `<h3>${title}</h3>`;
+  for (const [k, name, min, max, step, fmt] of list) {
+    adjFmt[k] = fmt || signed;
+    const f = document.createElement('div'); f.className = 'field';
+    f.innerHTML = `<div class="label"><label for="a-${k}">${name}</label><output class="reset" id="a-${k}Out" title="Doble toque para volver a 0"></output></div>` +
+      `<input type="range" id="a-${k}" min="${min}" max="${max}" step="${step}">`;
+    grp.appendChild(f);
+    const inp = f.querySelector('input'), reset = () => { S.adj[k] = 0; adjChanged(); };
+    inp.oninput = () => { S.adj[k] = +inp.value; adjChanged(true); };
+    onDoubleTap(inp, reset); onDoubleTap(f.querySelector('output'), reset);
+  }
+  $('adjSliders').appendChild(grp);
+}
+const sameAdj = (a, b) => ADJ_KEYS.every(k => (+a[k] || 0) === (+b[k] || 0));
+function renderPresets() {
+  const box = $('presets'); box.innerHTML = '';
+  const add = (n, a, i) => {
+    const sp = document.createElement('span'); if (sameAdj(a, S.adj)) sp.className = 'on';
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.setAttribute('aria-pressed', String(sameAdj(a, S.adj)));
+    b.onclick = () => { S.adj = { ...ADJ0, ...a }; adjChanged(); };
+    sp.appendChild(b);
+    if (i !== undefined) {
+      const x = document.createElement('button'); x.type = 'button'; x.className = 'del'; x.textContent = '×'; x.setAttribute('aria-label', 'Borrar preset ' + n);
+      x.onclick = () => { if (confirm(`¿Borrar el preset “${n}”?`)) { presets.splice(i, 1); savePresets(); renderPresets(); } };
+      sp.appendChild(x);
+    }
+    box.appendChild(sp);
+  };
+  FACTORY.forEach(([n, a]) => add(n, a));
+  presets.forEach((p, i) => add(p.n, p.a, i));
+}
+function syncAdj() {
+  for (const k of ADJ_KEYS) { $('a-' + k).value = S.adj[k]; $('a-' + k + 'Out').textContent = adjFmt[k](S.adj[k]); }
+  const on = !adjNeutral(S.adj), st = $('adjState');
+  st.textContent = on ? 'activos en todas' : 'se aplican a todas'; st.classList.toggle('on', on);
+  $('beforeStage').hidden = !on; $('beforeBtn').disabled = !on; $('adjReset').disabled = !on;
+  renderPresets();
+}
+function adjChanged(live) {
+  syncAdj(); saveSettings();
+  if (!live) { quick = false; rerender(); return; }
+  // arrastrando: solo la vista previa, rápida; las miniaturas y la versión completa al frenar
+  quick = true; cancelAnimationFrame(raf); raf = requestAnimationFrame(drawPreview);
+  clearTimeout(settleT); settleT = setTimeout(() => { quick = false; rerender(); }, 220);
+}
+$('adjReset').onclick = () => { S.adj = { ...ADJ0 }; adjChanged(); };
+$('presetSave').onclick = () => {
+  const n = $('presetName').value.trim();
+  if (!n) { $('presetName').focus(); setMsg('Poné un nombre para el preset.'); return; }
+  if (FACTORY.some(([f]) => f.toLowerCase() === n.toLowerCase())) { setMsg('Ese nombre es de un preset de fábrica. Elegí otro.', true); return; }
+  const i = presets.findIndex(p => p.n.toLowerCase() === n.toLowerCase()), p = { n, a: { ...S.adj } };
+  if (i >= 0) presets[i] = p; else presets.push(p);
+  savePresets(); $('presetName').value = ''; renderPresets(); setMsg('Preset guardado: ' + n);
+};
+$('presetName').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); $('presetSave').click(); } };
+// antes / después: mientras se mantiene apretado se ve la foto sin ajustes (con el mismo recorte y la marca)
+for (const id of ['beforeBtn', 'beforeStage']) {
+  const b = $(id), set = v => { if (before === v) return; before = v; b.classList.toggle('down', v); drawPreview(); };
+  b.addEventListener('pointerdown', e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); set(true); });
+  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) b.addEventListener(t, () => set(false));
+  b.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); set(true); } });
+  b.addEventListener('keyup', () => set(false)); b.addEventListener('blur', () => set(false));
+  b.addEventListener('contextmenu', e => e.preventDefault());
+}
+$('rot').oninput = e => { S.rot = +e.target.value; changed(); };
+onDoubleTap($('rot'), () => { S.rot = 0; changed(); });
+onDoubleTap($('rotOut'), () => { S.rot = 0; changed(); });
+if (window.innerWidth > 860) $('adjBox').open = true;
 
 const drop = $('drop');
 $('file').onchange = e => { addFiles(e.target.files); e.target.value = ''; };

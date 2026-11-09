@@ -1,5 +1,5 @@
 // San Bao Studio App: guarda las herramientas para usarlas sin conexión
-const CACHE = 'sanbao-v2';
+const CACHE = 'sanbao-v3';
 const CORE = ['./', './index.html', './sello/', './sello/index.html', './manifest.webmanifest', './icon-192.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
