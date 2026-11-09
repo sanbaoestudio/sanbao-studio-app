@@ -137,6 +137,10 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
 .msg.err { color: var(--danger); }
 
 .viewer { display: grid; gap: 14px; min-width: 0; }
+/* compu: la foto acompaña el scroll del panel de la izquierda */
+@media (min-width: 861px) {
+  .viewer { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+}
 .stage {
   background: var(--stage); border-radius: 14px; display: grid; place-items: center; padding: 16px; min-height: 320px; position: relative;
 }
