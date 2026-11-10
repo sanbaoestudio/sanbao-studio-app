@@ -103,6 +103,8 @@ select { width: 100%; font: inherit; padding: 8px 10px; border-radius: 8px; bord
 .seg button { border: 0; border-radius: 6px; padding: 6px 8px; background: transparent; color: var(--muted); font: 600 13px var(--f-body); cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--panel); color: var(--ink); box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
 .seg4 { grid-template-columns: repeat(4, 1fr); }
+.orient button { padding: 5px 4px; font-size: 12px; }
+.orient button:disabled { opacity: .4; cursor: default; }
 .stage canvas.pan { cursor: move; }
 .seg button:focus-visible, .swatches button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); resize: vertical; min-height: 46px; }
@@ -413,6 +415,9 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
         <canvas id="preview" width="1200" height="800" tabindex="0" aria-label="Vista previa con marca de agua. Arrastrá el logo o usá las flechas para moverlo."></canvas>
       </div>
       <div class="meta"><b id="name">Imagen de ejemplo</b><span class="mono" id="dims"></span></div>
+      <div class="seg seg4 orient" id="orient" role="group" aria-label="Filtrar por orientación" hidden>
+        <button type="button" data-v="all" aria-pressed="true">Todas</button><button type="button" data-v="h" aria-pressed="false">Horiz.</button><button type="button" data-v="v" aria-pressed="false">Vert.</button><button type="button" data-v="s" aria-pressed="false">Cuadr.</button>
+      </div>
       <div class="striphead" id="stripHead" hidden><span id="selCount"></span><button class="btn ghost small" id="selAll" type="button">Seleccionar todas</button></div>
       <div class="strip" id="strip"></div>
     </section>
@@ -917,6 +922,7 @@ function drawThumb(it) {
 function renderStrip() {
   const strip = $('strip'); strip.innerHTML = '';
   items.forEach((it, i) => {
+    if (!inFilter(it)) return;
     const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb' + (it.bad ? ' bad' : '');
     b.setAttribute('aria-label', it.name); b.setAttribute('aria-current', String(i === current));
     if (it.bad) b.textContent = 'No se pudo abrir ' + it.name; else b.appendChild(drawThumb(it));
@@ -935,17 +941,34 @@ function renderStrip() {
   });
 }
 function renderAll() {
+  const okAll = items.filter(i => !i.bad);
+  // si el filtro quedó vacío (se borraron fotos), vuelve a Todas; si la foto que se ve no entra en el filtro, muestra la primera que sí
+  if (filt !== 'all' && !okAll.some(inFilter)) filt = 'all';
+  if (!inFilter(items[current] || {})) current = items.findIndex(i => !i.bad && inFilter(i));
   invalidateShare(); drawPreview(); renderStrip();
-  const ok = items.filter(i => !i.bad).length;
-  $('count').textContent = ok ? `${ok} ${ok === 1 ? 'foto' : 'fotos'} en la lista` : 'Sin fotos todavía';
+  const ok = okAll.filter(inFilter).length;
+  $('orient').hidden = !okAll.length;
+  $('orient').querySelectorAll('button').forEach(b => {
+    const v = b.dataset.v, n = v === 'all' ? okAll.length : okAll.filter(i => orientOf(i) === v).length;
+    b.setAttribute('aria-pressed', String(v === filt)); b.disabled = !n && v !== filt;
+    b.textContent = `${ORIENT_LBL[v]} ${n}`;
+  });
+  $('count').textContent = okAll.length ? `${okAll.length} ${okAll.length === 1 ? 'foto' : 'fotos'} en la lista` : 'Sin fotos todavía';
   const ns = exportList().length;
   $('dlAll').disabled = !ns; $('dlOne').disabled = !ok; $('saveEach').disabled = !ns; $('share').disabled = !ns;
   $('saveEach').textContent = ns ? `Guardar ${ns} en Fotos` : 'Guardar en Fotos';
   $('stripHead').hidden = !ok;
-  $('selCount').textContent = `${ns} de ${ok} ${ok === 1 ? 'foto elegida' : 'fotos elegidas'} para exportar`;
+  $('selCount').textContent = `${ns} de ${ok} ${ok === 1 ? 'foto elegida' : 'fotos elegidas'} para exportar${filt === 'all' ? '' : ' (' + ORIENT_LBL[filt].toLowerCase() + ')'}`;
   $('selAll').textContent = ns === ok ? 'Quitar todas' : 'Seleccionar todas'; $('clear').disabled = !items.length;
 }
-const exportList = () => items.filter(i => !i.bad && i.sel !== false);
+// filtro por orientación (según la foto original): exporta solo las fotos del grupo elegido
+let filt = 'all';
+const ORIENT_LBL = { all: 'Todas', h: 'Horiz.', v: 'Vert.', s: 'Cuadr.' };
+// cuadrada si los lados difieren menos de 2 % (muchas "cuadradas" vienen con 1 o 2 px de diferencia)
+const orientOf = it => Math.abs(it.w - it.h) <= Math.max(it.w, it.h) * 0.02 ? 's' : it.w > it.h ? 'h' : 'v';
+const inFilter = it => filt === 'all' || (!it.bad && it.w && orientOf(it) === filt);
+const exportList = () => items.filter(i => !i.bad && i.sel !== false && inFilter(i));
+$('orient').onclick = e => { const b = e.target.closest('button'); if (!b || b.disabled) return; filt = b.dataset.v; renderAll(); };
 let raf = 0;
 const rerender = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(renderAll); };
 
@@ -1010,7 +1033,7 @@ $('dlOne').onclick = async () => {
   const it = items[current]; if (!it || it.bad) return;
   setMsg('Estampando…'); const { blob, filename } = await render(it); await save(filename, blob);
 };
-$('selAll').onclick = () => { const all = exportList().length === items.filter(i => !i.bad).length; items.forEach(i => { i.sel = !all; }); renderAll(); };
+$('selAll').onclick = () => { const vis = items.filter(i => !i.bad && inFilter(i)), all = exportList().length === vis.length; vis.forEach(i => { i.sel = !all; }); renderAll(); };
 $('clear').onclick = () => { items = []; current = -1; setMsg(''); renderAll(); };
 
 // ---------- compartir (Instagram / Guardar en Fotos) ----------
