@@ -66,7 +66,10 @@ header { display: flex; align-items: center; justify-content: space-between; gap
   .viewer .meta .mono { white-space: nowrap; flex-shrink: 0; }
   .viewer .striphead { font-size: 12px; flex-wrap: nowrap; }
   .viewer .striphead .btn { padding: 4px 10px; min-height: 0; font-size: 12px; }
-  .viewer .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 44px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
+  .viewer .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 64px; overflow-x: auto; overscroll-behavior-x: contain; padding-bottom: 2px; }
+  /* en miniaturas chicas, tilde y × van a las esquinas para que el centro sirva para cambiar de foto */
+  .viewer .thumb .x { top: 2px; right: 2px; width: 18px; height: 18px; font-size: 11px; line-height: 18px; }
+  .viewer .thumb .pick { left: 2px; bottom: 2px; width: 18px; height: 18px; font-size: 10px; line-height: 14px; border-width: 1.5px; }
 }
 
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 18px; }
