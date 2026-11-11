@@ -177,6 +177,9 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
 .thumb .pick[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: #2a1406; }
 .thumb .pick:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 .thumb.off canvas { opacity: .4; }
+.thumb .warn { position: absolute; left: 4px; top: 4px; padding: 2px 6px; border-radius: 10px; font: 700 10px/14px var(--f-body); background: var(--danger); color: #fff; pointer-events: none; }
+.thumb .warn.maybe { background: #c98a00; }
+.striphead .blurnote { color: var(--danger); font-weight: 600; }
 .striphead { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
 .thumb.bad { display: grid; place-items: center; font-size: 11px; color: var(--danger); padding: 6px; text-align: center; }
 /* Ajustes: panel plegable para no saturar el celular */
@@ -413,7 +416,7 @@ textarea { width: 100%; font: 500 16px var(--f-display); padding: 9px 10px; bord
         <canvas id="preview" width="1200" height="800" tabindex="0" aria-label="Vista previa con marca de agua. Arrastrá el logo o usá las flechas para moverlo."></canvas>
       </div>
       <div class="meta"><b id="name">Imagen de ejemplo</b><span class="mono" id="dims"></span></div>
-      <div class="striphead" id="stripHead" hidden><span id="selCount"></span><button class="btn ghost small" id="selAll" type="button">Seleccionar todas</button></div>
+      <div class="striphead" id="stripHead" hidden><span id="selCount"></span><span class="blurnote" id="blurNote" hidden></span><button class="btn ghost small" id="blurOff" type="button" hidden>Destildar borrosas</button><button class="btn ghost small" id="selAll" type="button">Seleccionar todas</button></div>
       <div class="strip" id="strip"></div>
     </section>
   </div>
@@ -796,6 +799,40 @@ async function decode(file) {
 }
 const dimsOf = b => [b.width || b.naturalWidth, b.height || b.naturalHeight];
 
+
+// ---------- detector de fotos desenfocadas ----------
+// Varianza del Laplaciano por zonas (grilla 6x4) sobre la vista previa; se queda con las 2 zonas más nítidas (el sujeto),
+// así un fondo desenfocado a propósito no cuenta. Después compara cada foto con sus vecinas (por orden de nombre = orden de disparo).
+// No borra ni cambia nada: marca "Borrosa" / "¿Dudosa?" y deja destildar las borrosas para no exportarlas.
+const BLUR_BAD = 0.35, BLUR_MAYBE = 0.6, BLUR_WIN = 15;
+function sharpness(cv) {
+  const w = cv.width, h = cv.height; if (w < 8 || h < 8) return null;
+  const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+  const gray = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) gray[j] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+  const [cx, cy] = w >= h ? [6, 4] : [4, 6], n = cx * cy, sum = new Float64Array(n), sq = new Float64Array(n), cnt = new Float64Array(n);
+  for (let y = 1; y < h - 1; y++) {
+    const zy = Math.min(cy - 1, Math.floor((y - 1) * cy / (h - 2))), row = y * w;
+    for (let x = 1; x < w - 1; x++) {
+      const k = row + x, v = 4 * gray[k] - gray[k - 1] - gray[k + 1] - gray[k - w] - gray[k + w];
+      const z = zy * cx + Math.min(cx - 1, Math.floor((x - 1) * cx / (w - 2)));
+      sum[z] += v; sq[z] += v * v; cnt[z]++;
+    }
+  }
+  const vars = []; for (let z = 0; z < n; z++) if (cnt[z]) vars.push(sq[z] / cnt[z] - (sum[z] / cnt[z]) ** 2);
+  vars.sort((a, b) => b - a);
+  return (vars[0] + (vars[1] ?? vars[0])) / 2;
+}
+const median = a => { const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+function analyzeBlur() {
+  const list = items.filter(i => !i.bad && i.score != null).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  list.forEach((it, i) => {
+    const ref = median(list.slice(Math.max(0, i - BLUR_WIN), i + BLUR_WIN + 1).map(t => t.score));
+    it.rel = ref > 0 ? it.score / ref : 1;
+    it.blur = list.length < 4 ? null : it.rel < BLUR_BAD ? 'bad' : it.rel < BLUR_MAYBE ? 'maybe' : null;
+  });
+}
+
 async function addFiles(list) {
   const files = [...list].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
   if (!files.length) return;
@@ -805,10 +842,11 @@ async function addFiles(list) {
     try {
       const bmp = await decode(file); const [w, h] = dimsOf(bmp);
       const preview = scaled(bmp, w, h, PREVIEW_MAX);
-      items.push({ id: ++uid, file, name: file.name, w, h, preview, thumb: scaled(preview, preview.width, preview.height, THUMB_MAX), fx: 0.5, fy: 0.5, sel: true });
+      items.push({ id: ++uid, file, name: file.name, w, h, preview, score: sharpness(preview), thumb: scaled(preview, preview.width, preview.height, THUMB_MAX), fx: 0.5, fy: 0.5, sel: true });
       bmp.close && bmp.close();
     } catch (e) { bad++; items.push({ file, name: file.name, bad: true }); }
   }
+  analyzeBlur();
   if (current < 0 || items[current]?.bad) current = items.findIndex(i => !i.bad);
   setMsg(bad ? `${bad} ${bad === 1 ? 'archivo no se pudo' : 'archivos no se pudieron'} abrir. Si son HEIC del iPhone, exportalos como JPG.` : '', !!bad);
   renderAll();
@@ -907,7 +945,7 @@ function drawPreview() {
   const g = c.getContext('2d'); g.drawImage(v, 0, 0, c.width, c.height); stampAll(g, c.width, c.height, it); drawSelection(g, c.width, c.height); drawGuides(g, c.width, c.height);
   $('tag').hidden = !it.sample;
   $('name').textContent = it.name;
-  $('dims').textContent = `${outDims(it)[0]} × ${outDims(it)[1]} px · ${S.showLogo ? `logo ${col === WHITE ? 'blanco' : 'naranja'}${S.color === 'auto' ? ' (auto)' : ''}` : 'sin logo'}`;
+  $('dims').textContent = `${outDims(it)[0]} × ${outDims(it)[1]} px · ${S.showLogo ? `logo ${col === WHITE ? 'blanco' : 'naranja'}${S.color === 'auto' ? ' (auto)' : ''}` : 'sin logo'}${it.blur ? ` · ${it.blur === 'bad' ? 'borrosa' : 'dudosa de foco'} (${Math.round(it.rel * 100)}% de las vecinas)` : ''}`;
 }
 function drawThumb(it) {
   const t = thumbShown(it);
@@ -928,9 +966,10 @@ function renderStrip() {
       pk.textContent = it.sel ? '✓' : '';
       pk.onclick = e => { e.stopPropagation(); it.sel = !it.sel; renderAll(); };
       b.appendChild(pk); if (!it.sel) b.classList.add('off');
+      if (it.blur) { const wn = document.createElement('span'); wn.className = 'warn' + (it.blur === 'maybe' ? ' maybe' : ''); wn.textContent = it.blur === 'bad' ? 'Borrosa' : '¿Dudosa?'; wn.title = `Nitidez: ${Math.round(it.rel * 100)}% de las fotos vecinas`; b.appendChild(wn); }
     }
     const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×'; x.setAttribute('aria-label', 'Quitar ' + it.name);
-    x.onclick = e => { e.stopPropagation(); items.splice(i, 1); if (current >= items.length || items[current]?.bad) current = items.findIndex(t => !t.bad); renderAll(); };
+    x.onclick = e => { e.stopPropagation(); items.splice(i, 1); analyzeBlur(); if (current >= items.length || items[current]?.bad) current = items.findIndex(t => !t.bad); renderAll(); };
     b.appendChild(x); strip.appendChild(b);
   });
 }
@@ -944,6 +983,9 @@ function renderAll() {
   $('stripHead').hidden = !ok;
   $('selCount').textContent = `${ns} de ${ok} ${ok === 1 ? 'foto elegida' : 'fotos elegidas'} para exportar`;
   $('selAll').textContent = ns === ok ? 'Quitar todas' : 'Seleccionar todas'; $('clear').disabled = !items.length;
+  const nb = items.filter(i => i.blur === 'bad').length, nd = items.filter(i => i.blur === 'maybe').length;
+  $('blurNote').hidden = !(nb || nd); $('blurNote').textContent = `${nb} borrosa${nb === 1 ? '' : 's'} · ${nd} dudosa${nd === 1 ? '' : 's'}`;
+  $('blurOff').hidden = !nb; $('blurOff').textContent = `Destildar ${nb === 1 ? 'la borrosa' : 'las ' + nb + ' borrosas'}`;
 }
 const exportList = () => items.filter(i => !i.bad && i.sel !== false);
 let raf = 0;
@@ -1011,6 +1053,7 @@ $('dlOne').onclick = async () => {
   setMsg('Estampando…'); const { blob, filename } = await render(it); await save(filename, blob);
 };
 $('selAll').onclick = () => { const all = exportList().length === items.filter(i => !i.bad).length; items.forEach(i => { i.sel = !all; }); renderAll(); };
+$('blurOff').onclick = () => { items.forEach(i => { if (i.blur === 'bad') i.sel = false; }); renderAll(); };
 $('clear').onclick = () => { items = []; current = -1; setMsg(''); renderAll(); };
 
 // ---------- compartir (Instagram / Guardar en Fotos) ----------
