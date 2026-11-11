@@ -434,7 +434,7 @@ const LOGO = ["M447.25,941.8c-76.82-10.84-156.25-22.04-156.25-60.47,0-23.97,12.4
 const LOGO_BOX = { x: 247, y: 763, w: 2647, h: 394 };
 const ORANGE = '#ff914d';
 const PATHS = LOGO.map(d => new Path2D(d));
-const PREVIEW_MAX = 1600, THUMB_MAX = 240;
+const PREVIEW_MAX = 1600, THUMB_MAX = 320, BIG_KEEP = 4;
 // formatos de Instagram (las horizontales se exportan a 1080 de ancho, como las muestra Instagram)
 // 9:16 es historia/Reel (1080 × 1920); 16:9 va a 1920 × 1080 porque se usa para YouTube o pantallas
 const FRAMES = { '1:1': [1080, 1080], '3:4': [1080, 1440], '4:5': [1080, 1350], '4:3': [1080, 810], '9:16': [1080, 1920], '16:9': [1920, 1080] };
@@ -655,13 +655,13 @@ const LAB_ORANGE = lab([255, 145, 77]), LAB_WHITE = lab([255, 255, 255]);
 function colorFor(it) {
   if (S.color === 'orange') return ORANGE;
   if (S.color === 'white') return WHITE;
-  const v = view(it); return autoColor(v, logoRect(v.width, v.height));
+  const v = thumbBase(it); return autoColor(v, logoRect(v.width, v.height));
 }
 // "Como el logo" sigue la misma regla, pero mirando la zona donde cae el texto
 function textColorFor(it) {
   if (S.tcolor !== 'logo') return S.tcolor;
   if (S.color !== 'auto') return colorFor(it);
-  const v = view(it); return autoColor(v, textRect(v.width, v.height));
+  const v = thumbBase(it); return autoColor(v, textRect(v.width, v.height));
 }
 function autoColor(src, L) {
   const x = Math.max(0, Math.floor(L.x)), y = Math.max(0, Math.floor(L.y));
@@ -789,7 +789,7 @@ function makeSample() {
   g.fillStyle = sea; g.fillRect(0, 520, 1200, 280);
   g.strokeStyle = 'rgba(255,200,150,.55)'; g.lineCap = 'round';
   for (let i = 0; i < 9; i++) { g.lineWidth = 5 - i * .4; const w = 200 - i * 18; g.beginPath(); g.moveTo(760 - w / 2, 545 + i * 22); g.lineTo(760 + w / 2, 545 + i * 22); g.stroke(); }
-  return { name: 'Imagen de ejemplo', w: 1200, h: 800, preview: c, thumb: scaled(c, 1200, 800, THUMB_MAX), sample: true, fx: 0.5, fy: 0.5, id: 0 };
+  return { name: 'Imagen de ejemplo', w: 1200, h: 800, preview: c, small: c, thumb: scaled(c, 1200, 800, THUMB_MAX), sample: true, fx: 0.5, fy: 0.5, id: 0 };
 }
 
 async function decode(file) {
@@ -811,9 +811,11 @@ const dimsOf = b => [b.width || b.naturalWidth, b.height || b.naturalHeight];
 // así un fondo desenfocado a propósito no cuenta. Después compara cada foto con sus vecinas (por orden de nombre = orden de disparo).
 // No borra ni cambia nada: marca "Borrosa" / "¿Dudosa?" y deja destildar las borrosas para no exportarlas.
 const BLUR_BAD = 0.35, BLUR_MAYBE = 0.6, BLUR_WIN = 15;
+const sharpC = document.createElement('canvas'), sharpG = sharpC.getContext('2d', { willReadFrequently: true });
 function sharpness(cv) {
   const w = cv.width, h = cv.height; if (w < 8 || h < 8) return null;
-  const d = cv.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+  sharpC.width = w; sharpC.height = h; sharpG.drawImage(cv, 0, 0);
+  const d = sharpG.getImageData(0, 0, w, h).data;
   const gray = new Float32Array(w * h);
   for (let i = 0, j = 0; i < d.length; i += 4, j++) gray[j] = d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
   const [cx, cy] = w >= h ? [6, 4] : [4, 6], n = cx * cy, sum = new Float64Array(n), sq = new Float64Array(n), cnt = new Float64Array(n);
@@ -839,6 +841,21 @@ function analyzeBlur() {
   });
 }
 
+// foto grande bajo demanda (solo las últimas BIG_KEEP vistas quedan en memoria)
+let bigLRU = [];
+function ensureBig(it) {
+  if (!it || it.sample || it.bad || it.preview || it._loading) return;
+  it._loading = decode(it.file).then(bmp => {
+    const [w, h] = dimsOf(bmp);
+    it.preview = scaled(bmp, w, h, PREVIEW_MAX); bmp.close && bmp.close();
+    bigLRU = bigLRU.filter(t => t !== it); bigLRU.push(it);
+    while (bigLRU.length > BIG_KEEP) { const old = bigLRU.shift(); if (old.preview) old.preview.width = old.preview.height = 0; old.preview = null; old._v = null; old._vk = null; }
+    if (curItem() === it) { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawPreview); }
+  }).catch(() => {}).finally(() => { it._loading = null; });
+}
+const srcOf = it => it.preview || it.small;
+function preloadAround() { [current, current + 1, current - 1].forEach(i => ensureBig(items[i])); }
+
 async function addFiles(list) {
   const files = [...list].filter(f => f.type.startsWith('image/') || /\.(heic|heif)$/i.test(f.name));
   if (!files.length) return;
@@ -847,9 +864,14 @@ async function addFiles(list) {
   for (const file of files) {
     try {
       const bmp = await decode(file); const [w, h] = dimsOf(bmp);
-      const preview = scaled(bmp, w, h, PREVIEW_MAX);
-      items.push({ id: ++uid, file, name: file.name, w, h, preview, score: sharpness(preview), thumb: scaled(preview, preview.width, preview.height, THUMB_MAX), fx: 0.5, fy: 0.5, sel: true });
+      // memoria: de cada foto se guarda solo una copia chica (320 px) para miniaturas; la grande (1600 px) se carga
+      // cuando la mirás y se guardan las últimas BIG_KEEP. Así entran miles de fotos sin llenar la memoria.
+      const big = scaled(bmp, w, h, PREVIEW_MAX), score = sharpness(big);
+      const thumb = scaled(big, big.width, big.height, THUMB_MAX);
+      big.width = big.height = 0;
+      items.push({ id: ++uid, file, name: file.name, w, h, preview: null, small: thumb, score, thumb, fx: 0.5, fy: 0.5, sel: true });
       bmp.close && bmp.close();
+      if (items.length % 25 === 0) { setMsg(`Cargando… ${items.length} fotos`); await new Promise(r => setTimeout(r)); }
     } catch (e) { bad++; items.push({ file, name: file.name, bad: true }); }
   }
   analyzeBlur();
@@ -891,10 +913,10 @@ function drawGeom(g, src, sw, sh, W, H, G) {
 const geoKey = it => S.frame + '|' + S.rot + '|' + it.fx + '|' + it.fy;
 // vista previa sin ajustes (recortada y enderezada)
 function view(it) {
-  if (plain()) return it.preview;
-  const key = geoKey(it);
+  if (plain()) return srcOf(it);
+  const key = geoKey(it) + '|' + (it.preview ? 'b' : 's');
   if (it._vk !== key) {
-    const src = it.preview, G = cropGeom(src.width, src.height, it);
+    const src = srcOf(it), G = cropGeom(src.width, src.height, it);
     const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(G.cw)); c.height = Math.max(1, Math.round(G.ch));
     drawGeom(c.getContext('2d'), src, src.width, src.height, c.width, c.height, G);
     it._v = c; it._vk = key;
@@ -906,7 +928,7 @@ function view(it) {
 let shownCache = { key: null, c: null }, quick = false, settleT = 0;
 function shown(it) {
   const P = getP(); if (!P) return view(it);
-  const q = quick ? 0.5 : 1, key = it.id + '|' + geoKey(it) + '|' + adjKey() + '|' + q;
+  const q = quick ? 0.5 : 1, key = it.id + '|' + geoKey(it) + '|' + adjKey() + '|' + q + '|' + (it.preview ? 'b' : 's');
   if (shownCache.key !== key) {
     const v = view(it), c = shownCache.c && shownCache.c !== v ? shownCache.c : document.createElement('canvas');
     c.width = Math.max(1, Math.round(v.width * q)); c.height = Math.max(1, Math.round(v.height * q));
@@ -920,7 +942,7 @@ function thumbBase(it) {
   if (plain()) return it.thumb;
   const key = geoKey(it);
   if (it._tk !== key) {
-    const src = it.preview, G = cropGeom(src.width, src.height, it), [tw, th] = fit(G.cw, G.ch, THUMB_MAX);
+    const src = it.small, G = cropGeom(src.width, src.height, it), [tw, th] = fit(G.cw, G.ch, THUMB_MAX);
     const c = document.createElement('canvas'); c.width = Math.max(1, tw); c.height = Math.max(1, th);
     drawGeom(c.getContext('2d'), src, src.width, src.height, c.width, c.height, G);
     it._t = c; it._tk = key;
@@ -944,7 +966,11 @@ function outDims(it) {
 
 // ---------- dibujo ----------
 const curItem = () => items[current] && !items[current].bad ? items[current] : sample;
+let lastShown = null;
 function drawPreview() {
+  preloadAround();
+  if (lastShown && lastShown !== curItem()) { lastShown._v = null; lastShown._vk = null; }
+  lastShown = curItem();
   const it = curItem(), base = view(it), v = before ? base : shown(it);
   const c = $('preview'); c.width = base.width; c.height = base.height;
   const col = colorFor(it);
@@ -1060,7 +1086,7 @@ $('dlOne').onclick = async () => {
 };
 $('selAll').onclick = () => { const all = exportList().length === items.filter(i => !i.bad).length; items.forEach(i => { i.sel = !all; }); renderAll(); };
 $('blurOff').onclick = () => { items.forEach(i => { if (i.blur === 'bad') i.sel = false; }); renderAll(); };
-$('clear').onclick = () => { items = []; current = -1; setMsg(''); renderAll(); };
+$('clear').onclick = () => { items = []; bigLRU = []; current = -1; setMsg(''); renderAll(); };
 
 // ---------- compartir (Instagram / Guardar en Fotos) ----------
 const SHARE_LABEL = 'Guardar en Fotos o Instagram';
@@ -1252,7 +1278,7 @@ pv.addEventListener('pointerup', endDrag);
 pv.addEventListener('pointercancel', endDrag);
 function panTo(x, y) {
   // la foto sigue al dedo: el corrimiento en pantalla se pasa a la foto sin girar
-  const it = drag.it, src = it.preview;
+  const it = drag.it, src = srcOf(it);
   const G = cropGeom(src.width, src.height, { fx: drag.fx0, fy: drag.fy0 }), k = G.cw / pv.width;
   const dx = (x - drag.x0) * k, dy = (y - drag.y0) * k, c = Math.cos(G.t), s = Math.sin(G.t);
   const ux = dx * c + dy * s, uy = -dx * s + dy * c;
